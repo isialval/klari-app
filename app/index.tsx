@@ -1,5 +1,5 @@
+import { router } from "expo-router";
 import {
-  Alert,
   Image,
   ImageBackground,
   StyleSheet,
@@ -32,7 +32,7 @@ export default function Index() {
 
           <TouchableOpacity
             className="bg-secondaryPink rounded-2xl py-4 mb-4"
-            onPress={() => Alert.alert("Login", "Próximamente...")}
+            onPress={() => router.push("/(auth)/login")}
           >
             <Text className="text-white text-center font-semibold text-lg">
               Iniciar Sesión
@@ -43,7 +43,7 @@ export default function Index() {
 
           <TouchableOpacity
             className="bg-primaryPink rounded-2xl py-4"
-            onPress={() => Alert.alert("Registro", "Próximamente...")}
+            onPress={() => router.push("/(auth)/register")}
           >
             <Text className="text-white text-center font-semibold text-lg">
               Crear Cuenta
