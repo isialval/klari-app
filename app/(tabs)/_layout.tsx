@@ -9,14 +9,14 @@ export default function TabLayout() {
         tabBarActiveTintColor: "#580423",
         tabBarInactiveTintColor: "#BB6276",
         tabBarStyle: {
-          backgroundColor: "#E7BEC6",
+          backgroundColor: "#F6E7EA",
         },
       }}
     >
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
+          title: "Explorar",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="search-outline" size={20} color={color} />
           ),

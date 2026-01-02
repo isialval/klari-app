@@ -9,10 +9,52 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const usuario = "Lucy";
+
+const categorias = [
+  {
+    id: 1,
+    nombre: "Contorno de ojos",
+    imagen: require("../../assets/images/categories/contorno.jpg"),
+  },
+  {
+    id: 2,
+    nombre: "Tónicos",
+    imagen: require("../../assets/images/categories/tonico.jpg"),
+  },
+  {
+    id: 3,
+    nombre: "Hidratantes",
+    imagen: require("../../assets/images/categories/hidratante.jpg"),
+  },
+  {
+    id: 4,
+    nombre: "Serums",
+    imagen: require("../../assets/images/categories/serum.jpg"),
+  },
+  {
+    id: 5,
+    nombre: "Protectores solares",
+    imagen: require("../../assets/images/categories/protector.jpg"),
+  },
+  {
+    id: 6,
+    nombre: "Limpiadores",
+    imagen: require("../../assets/images/categories/limpiador.jpg"),
+  },
+  {
+    id: 7,
+    nombre: "Mascarillas",
+    imagen: require("../../assets/images/categories/mascarilla.jpg"),
+  },
+];
+
 export default function HomeScreen() {
-  const usuario = "Lucy";
   return (
-    <SafeAreaView className="flex-1 bg-backgroundPink">
+    <SafeAreaView
+      className="flex-1 bg-backgroundPink"
+      edges={["top", "right", "left"]}
+    >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -129,6 +171,35 @@ export default function HomeScreen() {
                 </Text>
               </ImageBackground>
             </TouchableOpacity>
+          </View>
+        </View>
+        <View className="flex">
+          <Text className="my-4 text-xl text-secondaryPink font-semibold text-center">
+            Explora nuevos productos
+          </Text>
+          <View className="flex flex-row flex-wrap justify-between px-4">
+            {categorias.map((categoria) => (
+              <TouchableOpacity
+                className="mb-4 w-[48%] rounded-2xl overflow-hidden shadow-md bg-white"
+                key={categoria.id}
+                onPress={() =>
+                  Alert.alert(
+                    `Proximamente: Ir a la categoría de ${categoria.nombre}`
+                  )
+                }
+              >
+                <Image
+                  source={categoria.imagen}
+                  style={{ width: "100%", height: 100 }}
+                  resizeMode="cover"
+                />
+                <View className="p-2">
+                  <Text className="text-center text-secondaryPink font-semibold">
+                    {categoria.nombre}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </ScrollView>
