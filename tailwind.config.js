@@ -12,6 +12,7 @@ module.exports = {
         backgroundWhite: "#FFFFFF",
         primaryPink: "#BB6276",
         secondaryPink: "#580423",
+        lightPink: "#F6E7EA",
       },
     },
   },

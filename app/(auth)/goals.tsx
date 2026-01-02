@@ -31,7 +31,7 @@ export default function Goals() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
   const handleChangeGoals = () => {
-    router.push("/(auth)/goals");
+    router.push("/(tabs)/home");
   };
 
   const toggleGoal = (goalText: string) => {
