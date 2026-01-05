@@ -40,6 +40,11 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="routine/[type]" options={{ href: null }} />
+      <Tabs.Screen name="routine/edit" options={{ href: null }} />
+      <Tabs.Screen name="routine/select-product" options={{ href: null }} />
+      <Tabs.Screen name="favorites" options={{ href: null }} />
+      <Tabs.Screen name="inventory" options={{ href: null }} />
     </Tabs>
   );
 }

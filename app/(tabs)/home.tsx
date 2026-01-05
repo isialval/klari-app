@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import {
   Alert,
   Image,
@@ -115,7 +116,7 @@ export default function HomeScreen() {
           <View className="mt-4 flex w-full">
             <TouchableOpacity
               className="h-20 rounded-2xl"
-              onPress={() => Alert.alert("Proximamente: Ir a Rutina de día")}
+              onPress={() => router.push("/routine/day")}
             >
               <ImageBackground
                 source={require("../../assets/images/day.jpg")}
@@ -145,7 +146,7 @@ export default function HomeScreen() {
           <View className="mt-4 flex w-full">
             <TouchableOpacity
               className="h-20 rounded-2xl"
-              onPress={() => Alert.alert("Proximamente: Ir a Rutina de Noche")}
+              onPress={() => router.push("/routine/night")}
             >
               <ImageBackground
                 source={require("../../assets/images/night.jpg")}
