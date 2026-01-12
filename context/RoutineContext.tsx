@@ -14,6 +14,11 @@ type Step = {
   product: Product | null;
 };
 
+type UserProfile = {
+  skinType: string;
+  goals: string[];
+};
+
 type RoutineContextType = {
   daySteps: Step[];
   nightSteps: Step[];
@@ -24,11 +29,13 @@ type RoutineContextType = {
     stepId: number,
     product: Product | null
   ) => void;
+  userProfile: UserProfile;
+  setSkinType: (skinType: string) => void;
+  setGoals: (goals: string[]) => void;
 };
 
 const RoutineContext = createContext<RoutineContextType | undefined>(undefined);
 
-// Datos iniciales
 const initialDaySteps: Step[] = [
   { id: 1, name: "Limpiador", order: 1, product: null },
   {
@@ -65,6 +72,14 @@ const initialNightSteps: Step[] = [
 export function RoutineProvider({ children }: { children: ReactNode }) {
   const [daySteps, setDaySteps] = useState<Step[]>(initialDaySteps);
   const [nightSteps, setNightSteps] = useState<Step[]>(initialNightSteps);
+  const [userProfile, setUserProfile] = useState<UserProfile>(initialProfile);
+  const setSkinType = (skinType: string) => {
+    setUserProfile((prev) => ({ ...prev, skinType }));
+  };
+
+  const setGoals = (goals: string[]) => {
+    setUserProfile((prev) => ({ ...prev, goals }));
+  };
 
   const updateStepProduct = (
     type: "day" | "night",
@@ -90,6 +105,9 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
         setDaySteps,
         setNightSteps,
         updateStepProduct,
+        userProfile,
+        setSkinType,
+        setGoals,
       }}
     >
       {children}
@@ -104,3 +122,8 @@ export function useRoutine() {
   }
   return context;
 }
+
+const initialProfile: UserProfile = {
+  skinType: "Mixta",
+  goals: ["Mejorar la textura de mi piel", "Reducir manchas"],
+};

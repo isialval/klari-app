@@ -23,13 +23,12 @@ type Product = {
 
 // Mapeo de pasos a categorías
 const stepToCategoryMap: Record<number, number> = {
-  1: 6, // Limpiador -> Limpiadores
-  2: 2, // Tónico -> Tónicos
-  3: 4, // Serum -> Serums
-  4: 1, // Contorno de ojos -> Contorno de ojos
-  5: 3, // Hidratante -> Hidratantes
-  6: 7, // Mascarilla -> Mascarillas
-  7: 5, // Protector solar -> Protectores solares
+  1: 6,
+  3: 4,
+  4: 1,
+  5: 3,
+  6: 7,
+  7: 5,
 };
 
 // Productos de ejemplo
@@ -156,13 +155,11 @@ export default function SelectProductScreen() {
     type: "day" | "night";
   }>();
 
-  // Obtener datos del context
   const { daySteps, nightSteps, updateStepProduct } = useRoutine();
 
   const stepIdNum = parseInt(stepId || "1", 10);
   const routineType = type || "day";
 
-  // Obtener paso actual y su producto
   const steps = routineType === "day" ? daySteps : nightSteps;
   const currentStep = steps.find((s) => s.id === stepIdNum);
   const stepName = currentStep?.name || "Paso";
@@ -219,7 +216,6 @@ export default function SelectProductScreen() {
         image: selectedProduct.image,
       });
     }
-    // Volver a edit.tsx
     router.back();
   };
 
@@ -271,7 +267,6 @@ export default function SelectProductScreen() {
       className="flex-1 bg-backgroundPink"
       edges={["top", "right", "left"]}
     >
-      {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-4">
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color="#580423" />
@@ -282,12 +277,9 @@ export default function SelectProductScreen() {
         <View className="px-2"></View>
       </View>
 
-      {/* Descripción */}
       <Text className="text-white text-sm text-center px-8 mt-2">
         Selecciona uno de los productos sugeridos para cambiar tu opción actual.
       </Text>
-
-      {/* Producto actual */}
       {currentProduct && (
         <View className="mx-4 mt-4 bg-white rounded-2xl p-4 flex-row items-center">
           <View
@@ -318,12 +310,10 @@ export default function SelectProductScreen() {
         </View>
       )}
 
-      {/* Título productos sugeridos */}
       <Text className="text-primaryPink font-semibold text-lg px-4 mt-6 mb-3">
         Productos sugeridos
       </Text>
 
-      {/* Tabs de filtro */}
       <View className="h-12 mb-2">
         <FlatList
           horizontal
@@ -366,7 +356,6 @@ export default function SelectProductScreen() {
         />
       </View>
 
-      {/* Grid de productos */}
       <FlatList
         data={visibleProducts}
         renderItem={renderProduct}
@@ -397,7 +386,6 @@ export default function SelectProductScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Botón guardar */}
       <View className="absolute bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-backgroundPink">
         <TouchableOpacity
           onPress={handleSave}

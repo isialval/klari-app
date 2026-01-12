@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoutine } from "../../context/RoutineContext";
 
-// Pasos disponibles
 const availableSteps = [
   { id: 1, name: "Limpiador", order: 1 },
   { id: 2, name: "Tónico", order: 2 },
@@ -38,7 +37,6 @@ export default function EditRoutineScreen() {
   const steps = isDay ? daySteps : nightSteps;
   const setSteps = isDay ? setDaySteps : setNightSteps;
 
-  // Filtrar pasos disponibles
   const getAvailableStepsForType = () => {
     return availableSteps.filter((step) => {
       if (!isDay && step.dayOnly) return false;
@@ -46,13 +44,11 @@ export default function EditRoutineScreen() {
     });
   };
 
-  // Pasos que aún no están en la rutina
   const getUnusedSteps = () => {
     const usedIds = steps.map((s) => s.id);
     return getAvailableStepsForType().filter((s) => !usedIds.includes(s.id));
   };
 
-  // Agregar paso
   const handleAddStep = (stepDef: (typeof availableSteps)[0]) => {
     const newStep = {
       id: stepDef.id,
@@ -64,7 +60,6 @@ export default function EditRoutineScreen() {
     setSteps(newSteps);
   };
 
-  // Eliminar paso
   const handleDeleteStep = (stepId: number) => {
     Alert.alert(
       "Eliminar paso",
@@ -80,19 +75,16 @@ export default function EditRoutineScreen() {
     );
   };
 
-  // Guardar rutina
   const handleSave = () => {
     Alert.alert("Éxito", "Rutina guardada correctamente", [
       { text: "OK", onPress: () => router.back() },
     ]);
   };
 
-  // Seleccionar producto
   const handleSelectProduct = (stepId: number) => {
     router.push(`/routine/select-product?stepId=${stepId}&type=${routineType}`);
   };
 
-  // Quitar producto
   const handleRemoveProduct = (stepId: number) => {
     updateStepProduct(routineType, stepId, null);
   };
@@ -104,7 +96,6 @@ export default function EditRoutineScreen() {
       className="flex-1 bg-backgroundPink"
       edges={["top", "right", "left"]}
     >
-      {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-4">
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={24} color="#580423" />
@@ -122,7 +113,6 @@ export default function EditRoutineScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Lista de pasos */}
         {steps.map((step) => (
           <View key={step.id} className="flex-row items-center mb-4 px-4">
             <TouchableOpacity
@@ -188,7 +178,6 @@ export default function EditRoutineScreen() {
           </View>
         ))}
 
-        {/* Agregar pasos */}
         {unusedSteps.length > 0 && (
           <View className="mx-4 mt-4 mb-2">
             <Text className="text-primaryPink font-semibold mb-3">
@@ -209,7 +198,6 @@ export default function EditRoutineScreen() {
           </View>
         )}
 
-        {/* Botón guardar */}
         <View className="px-4 mt-6 mb-8">
           <TouchableOpacity
             onPress={handleSave}
