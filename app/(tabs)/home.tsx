@@ -83,7 +83,7 @@ export default function HomeScreen() {
           <View className="mt-4 flex w-full flex-row justify-between">
             <TouchableOpacity
               className="px-1 bg-lightPink rounded-2xl"
-              onPress={() => Alert.alert("Proximamente: Ir a Mis Favoritos")}
+              onPress={() => router.push("/products/favorites")}
             >
               <View className="w-44 h-40 bg-lightPink rounded-2xl items-center justify-center">
                 <Image
@@ -98,7 +98,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               className="px-1 bg-lightPink rounded-2xl"
-              onPress={() => Alert.alert("Proximamente: Ir a Mis Productos")}
+              onPress={() => router.push("/products/my-products")}
             >
               <View className="w-44 h-40 bg-lightPink rounded-2xl items-center justify-center">
                 <Image
