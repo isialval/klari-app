@@ -1,8 +1,8 @@
-import { Product } from "@/constants/products";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Product } from "../types/product";
 
 interface ProductCardProps {
   item: Product;
@@ -48,7 +48,7 @@ export default function ProductCard({
       >
         <View className="relative">
           <Image
-            source={item.image}
+            source={{ uri: item.imageUrl }}
             style={{ width: "100%", height: 120 }}
             resizeMode="cover"
           />

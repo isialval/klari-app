@@ -1,5 +1,8 @@
 import ProductCard from "@/components/ProductCard";
-import { categories, Product, products } from "@/constants/products";
+import { categories } from "@/constants/products";
+import { useAuth } from "@/context/AuthContext";
+import { productService } from "@/services/productService";
+import { userService } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Product } from "../types/product";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -24,6 +28,7 @@ interface ProductListBaseProps {
   emptyMessage: string;
   emptyIcon: keyof typeof Ionicons.glyphMap;
   showBackButton?: boolean;
+  initialCategory?: string;
 }
 
 export default function ProductListBase({
@@ -32,28 +37,83 @@ export default function ProductListBase({
   emptyMessage,
   emptyIcon,
   showBackButton = false,
+  initialCategory,
 }: ProductListBaseProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string | number>(
+    initialCategory || 0
+  );
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const { user } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [myProducts, setMyProducts] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Estado local para favoritos y mis productos
-  const [favorites, setFavorites] = useState<number[]>(INITIAL_FAVORITES);
-  const [myProducts, setMyProducts] = useState<number[]>(INITIAL_MY_PRODUCTS);
-
-  const toggleFavorite = useCallback((id: number) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const toggleMyProduct = useCallback((id: number) => {
-    setMyProducts((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  }, []);
+  const loadData = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const [productsData, favoritesData, inventoryData] = await Promise.all([
+        productService.getAll(),
+        userService.getFavorites(user.id),
+        userService.getInventory(user.id),
+      ]);
+
+      setProducts(productsData);
+      setFavorites(favoritesData.map((p) => p.id));
+      setMyProducts(inventoryData.map((p) => p.id));
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleFavorite = useCallback(
+    async (id: number) => {
+      if (!user) return;
+
+      try {
+        if (favorites.includes(id)) {
+          await userService.removeFavorite(user.id, id);
+          setFavorites((prev) => prev.filter((x) => x !== id));
+        } else {
+          await userService.addFavorite(user.id, id);
+          setFavorites((prev) => [...prev, id]);
+        }
+      } catch (error) {
+        console.error("Error toggling favorite:", error);
+      }
+    },
+    [favorites, user]
+  );
+
+  const toggleMyProduct = useCallback(
+    async (id: number) => {
+      if (!user) return;
+
+      try {
+        if (myProducts.includes(id)) {
+          await userService.removeFromInventory(user.id, id);
+          setMyProducts((prev) => prev.filter((x) => x !== id));
+        } else {
+          await userService.addToInventory(user.id, id);
+          setMyProducts((prev) => [...prev, id]);
+        }
+      } catch (error) {
+        console.error("Error toggling inventory:", error);
+      }
+    },
+    [myProducts, user]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -72,12 +132,12 @@ export default function ProductListBase({
       return products.filter((p) => myProducts.includes(p.id));
     }
     return products;
-  }, [filterType, favorites, myProducts]);
+  }, [filterType, favorites, myProducts, products]);
 
   const filteredProducts = useMemo(() => {
     return baseProducts.filter((product) => {
       const matchCategory =
-        selectedCategory === 0 || product.categoryId === selectedCategory;
+        selectedCategory === 0 || product.category === selectedCategory;
       const matchSearch =
         product.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         product.brand.toLowerCase().includes(debouncedSearch.toLowerCase());
@@ -97,8 +157,8 @@ export default function ProductListBase({
     }
   }, [hasMore]);
 
-  const handleCategoryChange = (categoryId: number) => {
-    setSelectedCategory(categoryId);
+  const handleCategoryChange = (categoryValue: string | number) => {
+    setSelectedCategory(categoryValue);
     setVisibleCount(ITEMS_PER_PAGE);
   };
 
@@ -115,6 +175,13 @@ export default function ProductListBase({
     [favorites, myProducts, toggleFavorite, toggleMyProduct]
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#BB6276" />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "right", "left"]}>
       <View className="w-full px-4 pt-4">
@@ -155,14 +222,18 @@ export default function ProductListBase({
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => handleCategoryChange(item.id)}
+              onPress={() => handleCategoryChange(item.value)}
               className={`flex justify-center mr-2 px-4 py-2 rounded-full ${
-                selectedCategory === item.id ? "bg-primaryPink" : "bg-lightPink"
+                selectedCategory === item.value
+                  ? "bg-primaryPink"
+                  : "bg-lightPink"
               }`}
             >
               <Text
                 className={`text-center font-medium ${
-                  selectedCategory === item.id ? "text-white" : "text-gray-500"
+                  selectedCategory === item.value
+                    ? "text-white"
+                    : "text-gray-500"
                 }`}
               >
                 {item.name}

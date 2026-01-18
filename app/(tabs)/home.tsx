@@ -1,6 +1,5 @@
 import { router } from "expo-router";
 import {
-  Alert,
   Image,
   ImageBackground,
   ScrollView,
@@ -9,48 +8,55 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const usuario = "Lucy";
+import { useAuth } from "../../context/AuthContext";
 
 const categorias = [
   {
     id: 1,
     nombre: "Contorno de ojos",
+    value: "CONTORNO_OJOS",
     imagen: require("../../assets/images/categories/contorno.jpg"),
   },
   {
     id: 2,
     nombre: "Tónicos",
+    value: "TONICO",
     imagen: require("../../assets/images/categories/tonico.jpg"),
   },
   {
     id: 3,
     nombre: "Hidratantes",
+    value: "HIDRATANTE",
     imagen: require("../../assets/images/categories/hidratante.jpg"),
   },
   {
     id: 4,
     nombre: "Serums",
+    value: "SERUM",
     imagen: require("../../assets/images/categories/serum.jpg"),
   },
   {
     id: 5,
     nombre: "Protectores solares",
+    value: "PROTECTOR_SOLAR",
     imagen: require("../../assets/images/categories/protector.jpg"),
   },
   {
     id: 6,
     nombre: "Limpiadores",
+    value: "LIMPIADOR",
     imagen: require("../../assets/images/categories/limpiador.jpg"),
   },
   {
     id: 7,
     nombre: "Mascarillas",
+    value: "MASCARILLA",
     imagen: require("../../assets/images/categories/mascarilla.jpg"),
   },
 ];
 
 export default function HomeScreen() {
+  const { user } = useAuth();
   return (
     <SafeAreaView
       className="flex-1 bg-backgroundPink"
@@ -63,7 +69,7 @@ export default function HomeScreen() {
       >
         <View className="flex p-4 mt-2">
           <Text className="text-primaryPink text-2xl font-semibold">
-            Hola, {usuario}
+            Hola, {user?.username}
           </Text>
         </View>
         <View className="rounded-3xl bg-white p-4 overflow-hidden shadow-md">
@@ -184,9 +190,10 @@ export default function HomeScreen() {
                 className="mb-4 w-[48%] rounded-2xl overflow-hidden shadow-md bg-white"
                 key={categoria.id}
                 onPress={() =>
-                  Alert.alert(
-                    `Proximamente: Ir a la categoría de ${categoria.nombre}`
-                  )
+                  router.push({
+                    pathname: "/(tabs)/explore",
+                    params: { category: categoria.value },
+                  } as any)
                 }
               >
                 <Image

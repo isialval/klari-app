@@ -1,12 +1,12 @@
 export const categories = [
-  { id: 0, name: "Todos" },
-  { id: 1, name: "Contorno de ojos" },
-  { id: 2, name: "Tónicos" },
-  { id: 3, name: "Hidratantes" },
-  { id: 4, name: "Serums" },
-  { id: 5, name: "Protectores solares" },
-  { id: 6, name: "Limpiadores" },
-  { id: 7, name: "Mascarillas" },
+  { id: 0, name: "Todos", value: 0 },
+  { id: 1, name: "Limpiador", value: "LIMPIADOR" },
+  { id: 2, name: "Tónico", value: "TONICO" },
+  { id: 3, name: "Hidratante", value: "HIDRATANTE" },
+  { id: 4, name: "Serum", value: "SERUM" },
+  { id: 5, name: "Protector solar", value: "PROTECTOR_SOLAR" },
+  { id: 6, name: "Mascarilla", value: "MASCARILLA" },
+  { id: 7, name: "Contorno de ojos", value: "CONTORNO_OJOS" },
 ];
 
 export const skinTypes = [
