@@ -1,8 +1,13 @@
+import { useAuth } from "@/context/AuthContext";
+import { productService } from "@/services/productService";
+import { routineService } from "@/services/routineService";
+import { userService } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Text,
@@ -10,139 +15,20 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRoutine } from "../../context/RoutineContext";
+import { Product } from "../../types/product";
 
-// Tipos
-type Product = {
-  id: number;
-  name: string;
-  brand: string;
-  categoryId: number;
-  image: any;
+const categoryNames: Record<string, string> = {
+  LIMPIADOR: "Limpiador",
+  TONICO: "Tónico",
+  SERUM: "Serum",
+  CONTORNO_OJOS: "Contorno de ojos",
+  HIDRATANTE: "Hidratante",
+  MASCARILLA: "Mascarilla",
+  PROTECTOR_SOLAR: "Protector solar",
 };
 
-// Mapeo de pasos a categorías
-const stepToCategoryMap: Record<number, number> = {
-  1: 6,
-  3: 4,
-  4: 1,
-  5: 3,
-  6: 7,
-  7: 5,
-};
-
-// Productos de ejemplo
-const allProducts: Product[] = [
-  {
-    id: 1,
-    name: "Eye Cream Retinol",
-    brand: "The Ordinary",
-    categoryId: 1,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 2,
-    name: "Caffeine Solution 5%",
-    brand: "The Ordinary",
-    categoryId: 1,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 3,
-    name: "Glycolic Acid Toner",
-    brand: "Pixi",
-    categoryId: 2,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 4,
-    name: "Hydrating Toner",
-    brand: "Klairs",
-    categoryId: 2,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 5,
-    name: "Moisturizing Cream",
-    brand: "CeraVe",
-    categoryId: 3,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 6,
-    name: "Water Cream",
-    brand: "Tatcha",
-    categoryId: 3,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 7,
-    name: "Niacinamide 10%",
-    brand: "The Ordinary",
-    categoryId: 4,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 8,
-    name: "Vitamin C Serum",
-    brand: "Skinceuticals",
-    categoryId: 4,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 9,
-    name: "Hyaluronic Acid 2%",
-    brand: "The Ordinary",
-    categoryId: 4,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 10,
-    name: "UV Defense SPF50",
-    brand: "La Roche-Posay",
-    categoryId: 5,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 11,
-    name: "Sunscreen SPF30",
-    brand: "Supergoop",
-    categoryId: 5,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 12,
-    name: "Foaming Cleanser",
-    brand: "CeraVe",
-    categoryId: 6,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 13,
-    name: "Oil Cleanser",
-    brand: "DHC",
-    categoryId: 6,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 14,
-    name: "Clay Mask",
-    brand: "Aztec Secret",
-    categoryId: 7,
-    image: require("../../assets/images/product.jpg"),
-  },
-  {
-    id: 15,
-    name: "Sheet Mask Pack",
-    brand: "Innisfree",
-    categoryId: 7,
-    image: require("../../assets/images/product.jpg"),
-  },
-];
-
-// Tabs de filtro
 const filterTabs = [
-  { id: "suggestions", name: "Sugerencias App" },
+  { id: "suggestions", name: "Sugerencias" },
   { id: "favorites", name: "Favoritos", icon: "heart" },
   { id: "myProducts", name: "Mis productos", icon: "checkmark-circle" },
 ];
@@ -150,45 +36,61 @@ const filterTabs = [
 const ITEMS_PER_PAGE = 6;
 
 export default function SelectProductScreen() {
-  const { stepId, type } = useLocalSearchParams<{
-    stepId: string;
+  const { category, type, routineId } = useLocalSearchParams<{
+    category: string;
     type: "day" | "night";
+    routineId: string;
   }>();
 
-  const { daySteps, nightSteps, updateStepProduct } = useRoutine();
-
-  const stepIdNum = parseInt(stepId || "1", 10);
+  const { user } = useAuth();
   const routineType = type || "day";
+  const stepName = categoryNames[category] || category;
 
-  const steps = routineType === "day" ? daySteps : nightSteps;
-  const currentStep = steps.find((s) => s.id === stepIdNum);
-  const stepName = currentStep?.name || "Paso";
-  const currentProduct = currentStep?.product || null;
-  const categoryId = stepToCategoryMap[stepIdNum] || 0;
-
+  const [products, setProducts] = useState<Product[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [myProducts, setMyProducts] = useState<number[]>([]);
   const [selectedTab, setSelectedTab] = useState("suggestions");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(
-    currentProduct
-      ? {
-          ...currentProduct,
-          categoryId: categoryId,
-        }
-      : null
-  );
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Filtrar productos por categoría del paso
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    if (!user || !category) return;
+
+    setIsLoading(true);
+    try {
+      const [productsData, favoritesData, inventoryData] = await Promise.all([
+        productService.getByCategory(category),
+        userService.getFavorites(user.id),
+        userService.getInventory(user.id),
+      ]);
+
+      setProducts(productsData);
+      setFavorites(favoritesData.map((p) => p.id));
+      setMyProducts(inventoryData.map((p) => p.id));
+    } catch (error) {
+      console.error("Error loading products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredProducts = useMemo(() => {
-    let filtered = allProducts.filter((p) => p.categoryId === categoryId);
+    let filtered = products;
 
     if (selectedTab === "favorites") {
-      filtered = filtered.filter((p) => [1, 7, 10].includes(p.id));
+      filtered = products.filter((p) => favorites.includes(p.id));
     } else if (selectedTab === "myProducts") {
-      filtered = filtered.filter((p) => [2, 8, 12].includes(p.id));
+      filtered = products.filter((p) => myProducts.includes(p.id));
     }
 
     return filtered;
-  }, [categoryId, selectedTab]);
+  }, [products, selectedTab, favorites, myProducts]);
 
   const visibleProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
@@ -206,17 +108,18 @@ export default function SelectProductScreen() {
     setSelectedProduct(product);
   };
 
-  const handleSave = () => {
-    if (selectedProduct) {
-      // Guardar en el context (sin categoryId)
-      updateStepProduct(routineType, stepIdNum, {
-        id: selectedProduct.id,
-        name: selectedProduct.name,
-        brand: selectedProduct.brand,
-        image: selectedProduct.image,
-      });
+  const handleSave = async () => {
+    if (!selectedProduct || !routineId) return;
+
+    setIsSaving(true);
+    try {
+      await routineService.addProduct(Number(routineId), selectedProduct.id);
+      router.back();
+    } catch (error) {
+      Alert.alert("Error", "No se pudo agregar el producto");
+    } finally {
+      setIsSaving(false);
     }
-    router.back();
   };
 
   const renderProduct = useCallback(
@@ -228,7 +131,7 @@ export default function SelectProductScreen() {
           className={`w-[48%] mb-4 rounded-2xl overflow-hidden bg-white border-2 ${
             isSelected ? "border-primaryPink" : "border-gray-100"
           }`}
-          onPress={() => handleSelectProduct(item)}
+          onPress={() => setSelectedProduct(item)}
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
@@ -243,7 +146,7 @@ export default function SelectProductScreen() {
             </View>
           )}
           <Image
-            source={item.image}
+            source={{ uri: item.imageUrl }}
             style={{ width: "100%", height: 120 }}
             resizeMode="cover"
           />
@@ -262,6 +165,13 @@ export default function SelectProductScreen() {
     [selectedProduct]
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-backgroundPink justify-center items-center">
+        <ActivityIndicator size="large" color="#BB6276" />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView
       className="flex-1 bg-backgroundPink"
@@ -272,7 +182,7 @@ export default function SelectProductScreen() {
           <Ionicons name="chevron-back" size={28} color="#580423" />
         </TouchableOpacity>
         <Text className="text-primaryPink text-xl font-semibold ml-2">
-          Cambiar {stepName.toLowerCase()}
+          Seleccionar {stepName.toLowerCase()}
         </Text>
         <View className="px-2"></View>
       </View>
@@ -280,35 +190,6 @@ export default function SelectProductScreen() {
       <Text className="text-white text-sm text-center px-8 mt-2">
         Selecciona uno de los productos sugeridos para cambiar tu opción actual.
       </Text>
-      {currentProduct && (
-        <View className="mx-4 mt-4 bg-white rounded-2xl p-4 flex-row items-center">
-          <View
-            className="w-16 h-16 rounded-full overflow-hidden border-2 border-lightPink"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 2,
-              elevation: 2,
-            }}
-          >
-            <Image
-              source={currentProduct.image}
-              style={{ width: "100%", height: "100%" }}
-              resizeMode="cover"
-            />
-          </View>
-          <View className="flex-1 ml-4">
-            <Text className="text-gray-800 font-semibold">
-              {stepName}{" "}
-              <Text className="text-gray-400 font-normal">(Opción actual)</Text>
-            </Text>
-            <Text className="text-gray-500 text-sm mt-1" numberOfLines={2}>
-              {currentProduct.brand} {currentProduct.name}
-            </Text>
-          </View>
-        </View>
-      )}
 
       <Text className="text-primaryPink font-semibold text-lg px-4 mt-6 mb-3">
         Productos sugeridos
@@ -390,13 +271,17 @@ export default function SelectProductScreen() {
         <TouchableOpacity
           onPress={handleSave}
           className={`rounded-2xl py-4 items-center ${
-            selectedProduct ? "bg-primaryPink" : "bg-gray-300"
+            selectedProduct && !isSaving ? "bg-primaryPink" : "bg-gray-300"
           }`}
-          disabled={!selectedProduct}
+          disabled={!selectedProduct || isSaving}
         >
-          <Text className="text-white font-semibold text-lg">
-            Guardar cambio
-          </Text>
+          {isSaving ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white font-semibold text-lg">
+              Guardar cambio
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -1,53 +1,112 @@
+import { useAuth } from "@/context/AuthContext";
+import { routineService } from "@/services/routineService";
+import { Routine } from "@/types/routine";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const routineData = {
-  day: {
-    title: "Rutina de día",
-    steps: [
-      { id: 1, name: "Limpiador", product: null },
-      {
-        id: 3,
-        name: "Serum",
-        product: {
-          name: "Niacinamide 10%",
-          brand: "The Ordinary",
-          image: require("../../assets/images/product.jpg"),
-        },
-      },
-      { id: 4, name: "Hidratante", product: null },
-      {
-        id: 5,
-        name: "Protector solar",
-        product: {
-          name: "Eucerin Sun Sensitive Protect Cream SPF50+ 50ml",
-          brand: "Eucerin",
-          image: require("../../assets/images/product.jpg"),
-        },
-      },
-    ],
-    hasRoutine: true,
-  },
-  night: {
-    title: "Rutina de noche",
-    steps: [
-      { id: 1, name: "Limpiador", product: null },
-      { id: 2, name: "Serum", product: null },
-      { id: 3, name: "Hidratante", product: null },
-    ],
-    hasRoutine: false,
-  },
+const categoryOrder = [
+  "LIMPIADOR",
+  "TONICO",
+  "SERUM",
+  "CONTORNO_OJOS",
+  "HIDRATANTE",
+  "MASCARILLA",
+  "PROTECTOR_SOLAR",
+];
+
+const categoryNames: Record<string, string> = {
+  LIMPIADOR: "Limpiador",
+  TONICO: "Tónico",
+  SERUM: "Serum",
+  CONTORNO_OJOS: "Contorno de ojos",
+  HIDRATANTE: "Hidratante",
+  MASCARILLA: "Mascarilla",
+  PROTECTOR_SOLAR: "Protector solar",
 };
 
 export default function RoutineScreen() {
   const { type } = useLocalSearchParams<{ type: "day" | "night" }>();
+  const { user } = useAuth();
+  const [routine, setRoutine] = useState<Routine | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const routine = routineData[type] || routineData.day;
   const isDay = type === "day";
+  const title = isDay ? "Rutina de día" : "Rutina de noche";
 
-  if (!routine.hasRoutine) {
+  useFocusEffect(
+    useCallback(() => {
+      loadRoutine();
+    }, [type])
+  );
+
+  const loadRoutine = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const data = isDay
+        ? await routineService.getActiveDayRoutine(user.id)
+        : await routineService.getActiveNightRoutine(user.id);
+
+      console.log("Rutina cargada:", data);
+      console.log("Productos cargados:", data?.products);
+
+      setRoutine(data);
+    } catch (error) {
+      console.error("Error loading routine:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateRoutine = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const newRoutine = isDay
+        ? await routineService.createInitialDayRoutine(user.id)
+        : await routineService.createInitialNightRoutine(user.id);
+
+      console.log("Rutina creada:", newRoutine);
+      console.log("Productos:", newRoutine?.products);
+
+      setRoutine(newRoutine);
+    } catch (error: any) {
+      console.log("Error:", error);
+      Alert.alert("Error", error.message || "No se pudo crear la rutina");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sortedProducts = routine?.products
+    ? [...routine.products].sort(
+        (a, b) =>
+          categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
+      )
+    : [];
+
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-backgroundPink justify-center items-center">
+        <ActivityIndicator size="large" color="#BB6276" />
+      </SafeAreaView>
+    );
+  }
+  if (!routine) {
     return (
       <SafeAreaView
         className="flex-1 bg-backgroundPink"
@@ -58,7 +117,7 @@ export default function RoutineScreen() {
             <Ionicons name="arrow-back" size={24} color="#580423" />
           </TouchableOpacity>
           <Text className="text-primaryPink text-xl font-semibold ml-4">
-            {routine.title}
+            {title}
           </Text>
         </View>
 
@@ -77,7 +136,7 @@ export default function RoutineScreen() {
           </Text>
           <TouchableOpacity
             className="bg-primaryPink px-8 py-4 rounded-full mt-6"
-            onPress={() => router.push(`/routine/edit?type=${type}`)}
+            onPress={handleCreateRoutine}
           >
             <Text className="text-white font-semibold">Crear rutina</Text>
           </TouchableOpacity>
@@ -95,17 +154,15 @@ export default function RoutineScreen() {
         <TouchableOpacity onPress={() => router.push(`/(tabs)/home`)}>
           <Ionicons name="arrow-back" size={24} color="#580423" />
         </TouchableOpacity>
-        <Text className="text-primaryPink text-xl font-semibold">
-          {routine.title}
-        </Text>
+        <Text className="text-primaryPink text-xl font-semibold">{title}</Text>
         <View className="px-2"></View>
       </View>
       <Text className="text-white text-sm text-center mt-4 px-4">
         Recuerda seguir el orden indicado al realizar tu rutina
       </Text>
       <ScrollView className="flex-1 mt-6" showsVerticalScrollIndicator={false}>
-        {routine.steps.map((step) => (
-          <View key={step.id} className="flex-row items-center mb-4 px-4">
+        {sortedProducts.map((product) => (
+          <View key={product.id} className="flex-row items-center mb-4 px-4">
             <View
               className="w-28 h-28 rounded-full overflow-hidden bg-white z-10 border border-4 border-lightPink"
               style={{
@@ -117,10 +174,7 @@ export default function RoutineScreen() {
               }}
             >
               <Image
-                source={
-                  step.product?.image ||
-                  require("../../assets/images/product.jpg")
-                }
+                source={{ uri: product.imageUrl }}
                 style={{ width: "100%", height: "100%" }}
                 resizeMode="cover"
               />
@@ -129,20 +183,11 @@ export default function RoutineScreen() {
             <View className="flex-1 flex-row items-center bg-white rounded-r-3xl -ml-6 pl-10 pr-4 py-4 min-h-[80px]">
               <View className="flex-1">
                 <Text className="text-primaryPink font-bold text-base">
-                  {step.name}
+                  {categoryNames[product.category] || product.category}
                 </Text>
-                {step.product ? (
-                  <Text
-                    className="text-gray-500 text-sm max-h-4"
-                    numberOfLines={2}
-                  >
-                    {step.product.name}
-                  </Text>
-                ) : (
-                  <Text className="text-gray-400 text-sm mt-1 italic">
-                    Sin producto asignado
-                  </Text>
-                )}
+                <Text className="text-gray-500 text-sm" numberOfLines={2}>
+                  {product.name}
+                </Text>
               </View>
             </View>
           </View>
@@ -151,7 +196,11 @@ export default function RoutineScreen() {
         <View className="flex items-center px-4">
           <TouchableOpacity
             className="bg-primaryPink rounded-2xl py-4 mt-4 mb-4 w-full flex-row items-center justify-center"
-            onPress={() => router.push(`/routine/edit?type=${type}`)}
+            onPress={() =>
+              router.push(
+                `/routine/edit?type=${type}&routineId=${routine.id}` as any
+              )
+            }
           >
             <Text className="text-white text-center font-semibold text-lg">
               Editar rutina
