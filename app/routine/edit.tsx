@@ -164,7 +164,7 @@ export default function EditRoutineScreen() {
                 )}
               </TouchableOpacity>
 
-              <View className="flex-1 flex-row items-center bg-white rounded-r-3xl -ml-6 pl-10 pr-4 py-4 min-h-[80px]">
+              <View className="flex-1 flex-row items-center bg-white rounded-r-3xl -ml-8 pl-10 pr-4 py-4 min-h-[80px]">
                 <View className="flex-1">
                   <Text className="text-primaryPink font-bold text-base">
                     {availableSteps.find((s) => s.category === product.category)

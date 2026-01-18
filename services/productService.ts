@@ -24,4 +24,17 @@ export const productService = {
     const { data } = await api.get(`/products/category/${category}`);
     return data;
   },
+
+  getRecommendations: async (
+  category: string,
+  time: string,
+  skinType: string,
+  goals: string[]
+): Promise<Product[]> => {
+  const goalsParam = goals.join(",");
+  const { data } = await api.get(
+    `/products/routine/recommend?category=${category}&time=${time}&skinType=${skinType}&goals=${goalsParam}`
+  );
+  return data;
+},
 };

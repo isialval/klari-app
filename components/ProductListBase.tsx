@@ -19,9 +19,6 @@ import { Product } from "../types/product";
 
 const ITEMS_PER_PAGE = 6;
 
-const INITIAL_FAVORITES = [1, 3, 5, 8];
-const INITIAL_MY_PRODUCTS = [2, 5, 7, 10];
-
 interface ProductListBaseProps {
   title: string;
   filterType?: "favorites" | "myProducts";

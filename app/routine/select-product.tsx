@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import api from "../../services/api";
 import { Product } from "../../types/product";
 
 const categoryNames: Record<string, string> = {
@@ -46,14 +47,14 @@ export default function SelectProductScreen() {
   const routineType = type || "day";
   const stepName = categoryNames[category] || category;
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [myProducts, setMyProducts] = useState<number[]>([]);
   const [selectedTab, setSelectedTab] = useState("suggestions");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [favoritesProducts, setFavoritesProducts] = useState<Product[]>([]);
+  const [myProductsProducts, setMyProductsProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     loadData();
@@ -64,15 +65,31 @@ export default function SelectProductScreen() {
 
     setIsLoading(true);
     try {
-      const [productsData, favoritesData, inventoryData] = await Promise.all([
-        productService.getByCategory(category),
-        userService.getFavorites(user.id),
-        userService.getInventory(user.id),
-      ]);
+      const applicationTime = routineType === "day" ? "DIA" : "NOCHE";
 
-      setProducts(productsData);
-      setFavorites(favoritesData.map((p) => p.id));
-      setMyProducts(inventoryData.map((p) => p.id));
+      const userResponse = await api.get(`/users/${user.id}`);
+      const { skinType, goals } = userResponse.data;
+
+      const [suggestionsData, favoritesData, inventoryData] = await Promise.all(
+        [
+          productService.getRecommendations(
+            category,
+            applicationTime,
+            skinType,
+            goals
+          ),
+          userService.getFavorites(user.id),
+          userService.getInventory(user.id),
+        ]
+      );
+
+      setSuggestions(suggestionsData);
+      setFavoritesProducts(
+        favoritesData.filter((p) => p.category === category)
+      );
+      setMyProductsProducts(
+        inventoryData.filter((p) => p.category === category)
+      );
     } catch (error) {
       console.error("Error loading products:", error);
     } finally {
@@ -81,16 +98,13 @@ export default function SelectProductScreen() {
   };
 
   const filteredProducts = useMemo(() => {
-    let filtered = products;
-
     if (selectedTab === "favorites") {
-      filtered = products.filter((p) => favorites.includes(p.id));
+      return favoritesProducts;
     } else if (selectedTab === "myProducts") {
-      filtered = products.filter((p) => myProducts.includes(p.id));
+      return myProductsProducts;
     }
-
-    return filtered;
-  }, [products, selectedTab, favorites, myProducts]);
+    return suggestions;
+  }, [selectedTab, suggestions, favoritesProducts, myProductsProducts]);
 
   const visibleProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
@@ -104,10 +118,6 @@ export default function SelectProductScreen() {
     }
   }, [hasMore]);
 
-  const handleSelectProduct = (product: Product) => {
-    setSelectedProduct(product);
-  };
-
   const handleSave = async () => {
     if (!selectedProduct || !routineId) return;
 
@@ -115,7 +125,7 @@ export default function SelectProductScreen() {
     try {
       await routineService.addProduct(Number(routineId), selectedProduct.id);
       router.back();
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "No se pudo agregar el producto");
     } finally {
       setIsSaving(false);
