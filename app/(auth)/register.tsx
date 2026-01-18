@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -18,8 +21,34 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nombre, setNombre] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // ← agregar
+  const { register } = useAuth(); // ← agregar
 
-  const handleRegister = () => {};
+  const handleRegister = async () => {
+    if (!email || !nombre || !password || !confirmPassword) {
+      Alert.alert("Error", "Por favor completa todos los campos");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Las contraseñas no coinciden");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await register(nombre, email, password);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -38,7 +67,7 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="mt-2 flex-1 px-6 justify-between py-8">
+          <View className="mt-2 flex-1 px-6 py-8">
             <Text className="text-3xl font-bold text-primaryPink mb-8 text-left">
               ¡Hola! Registrate para comenzar
             </Text>
@@ -104,10 +133,15 @@ export default function Register() {
             <TouchableOpacity
               className="bg-primaryPink rounded-2xl py-4 mb-4"
               onPress={handleRegister}
+              disabled={isLoading}
             >
-              <Text className="text-white text-center font-semibold text-lg">
-                Crear Cuenta
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white text-center font-semibold text-lg">
+                  Crear Cuenta
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity

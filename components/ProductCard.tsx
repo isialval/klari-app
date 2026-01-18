@@ -1,5 +1,6 @@
 import { Product } from "@/constants/products";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
@@ -19,6 +20,7 @@ export default function ProductCard({
   onToggleMyProduct,
 }: ProductCardProps) {
   const [showRemoveOptions, setShowRemoveOptions] = useState(false);
+  const router = useRouter();
 
   const handleRemoveFavorite = () => {
     onToggleFavorite(item.id);
@@ -40,7 +42,7 @@ export default function ProductCard({
           if (showRemoveOptions) {
             setShowRemoveOptions(false);
           } else {
-            console.log("Ver producto:", item.name);
+            router.push(`/products/${item.id}`);
           }
         }}
       >

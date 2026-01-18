@@ -1,45 +1,73 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
 
 const goals = [
   {
     id: 1,
     text: "Mejorar la textura de mi piel",
+    value: "TEXTURA",
   },
   {
     id: 2,
     text: "Reducir manchas",
+    value: "MANCHAS",
   },
   {
     id: 3,
     text: "Reducir rojeces e irritación",
+    value: "IRRITACION",
   },
   {
     id: 4,
     text: "Prevenir y tratar lineas de expresión",
+    value: "LINEAS_EXPRESION",
   },
   {
     id: 5,
     text: "Minimizar poros",
+    value: "POROS",
   },
 ];
 
 export default function Goals() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
-  const handleChangeGoals = () => {
-    router.push("/(tabs)/home");
+  const handleChangeGoals = async () => {
+    if (!user || selectedGoals.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      await Promise.all(
+        selectedGoals.map((goal) => api.post(`/users/${user.id}/goals/${goal}`))
+      );
+      router.replace("/(tabs)/home" as any);
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudieron guardar los objetivos");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleGoal = (goalText: string) => {
+  const toggleGoal = (goalValue: string) => {
     setSelectedGoals((prev) => {
-      if (prev.includes(goalText)) {
-        return prev.filter((g) => g !== goalText);
+      if (prev.includes(goalValue)) {
+        return prev.filter((g) => g !== goalValue);
       } else {
-        return [...prev, goalText];
+        return [...prev, goalValue];
       }
     });
   };
@@ -70,7 +98,7 @@ export default function Goals() {
             </Text>
             <View className="flex w-full">
               {goals.map((goal) => {
-                const isSelected = selectedGoals.includes(goal.text);
+                const isSelected = selectedGoals.includes(goal.value); // ← cambiar
                 return (
                   <TouchableOpacity
                     key={goal.id}
@@ -79,7 +107,7 @@ export default function Goals() {
                         ? "border-primaryPink bg-pink-50"
                         : "border-gray-200 bg-white"
                     }`}
-                    onPress={() => toggleGoal(goal.text)}
+                    onPress={() => toggleGoal(goal.value)}
                   >
                     <Text
                       className={`flex-1 ${
@@ -121,11 +149,15 @@ export default function Goals() {
               selectedGoals.length > 0 ? "bg-primaryPink" : "bg-gray-300"
             }`}
             onPress={handleChangeGoals}
-            disabled={selectedGoals.length === 0}
+            disabled={selectedGoals.length === 0 || isLoading} // ← agregar isLoading
           >
-            <Text className="text-white text-center font-semibold text-lg">
-              Continuar
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-center font-semibold text-lg">
+                Continuar
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

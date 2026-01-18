@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,11 +13,30 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Por favor completa todos los campos");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await login(email, password);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -34,8 +55,8 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="mt-2 flex-1 px-6 justify-between py-8">
-            <Text className="text-3xl font-bold text-primaryPink mb-8 text-left">
+          <View className="mt-2 flex-1 px-6 py-8">
+            <Text className="text-3xl font-bold mb-8 text-primaryPink text-left">
               ¡Hola! ¡Que gusto verte otra vez!
             </Text>
 
@@ -76,11 +97,16 @@ export default function Login() {
 
             <TouchableOpacity
               className="bg-primaryPink rounded-2xl py-4 mb-4"
-              onPress={() => router.push("/(auth)/skin-type")}
+              onPress={handleLogin}
+              disabled={isLoading}
             >
-              <Text className="text-white text-center font-semibold text-lg">
-                Iniciar Sesión
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white text-center font-semibold text-lg">
+                  Iniciar Sesión
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity

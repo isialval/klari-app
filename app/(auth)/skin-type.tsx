@@ -1,7 +1,10 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -10,37 +13,61 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import api from "../../services/api";
 
 const skinTypes = [
   {
     id: 1,
     title: "Normal",
+    value: "NORMAL",
     image: require("../../assets/images/skintypes/piel_normal.jpg"),
   },
   {
     id: 2,
     title: "Seca",
+    value: "SECA",
     image: require("../../assets/images/skintypes/piel_seca.jpg"),
   },
   {
     id: 3,
     title: "Grasa",
+    value: "GRASA",
     image: require("../../assets/images/skintypes/piel_grasa.jpg"),
   },
   {
     id: 4,
     title: "Mixta",
+    value: "MIXTA",
     image: require("../../assets/images/skintypes/piel_mixta.jpg"),
   },
   {
     id: 5,
     title: "Sensible",
+    value: "SENSIBLE",
     image: require("../../assets/images/skintypes/piel_sensible.jpg"),
   },
 ];
 
 export default function SkinType() {
   const [selectedSkinType, setSelectedSkinType] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // ← agregar
+  const { user } = useAuth(); // ← agregar
+
+  const handleContinue = async () => {
+    if (!selectedSkinType || !user) return;
+
+    setIsLoading(true);
+    try {
+      await api.patch(
+        `/users/${user.id}/skin-type?skinType=${selectedSkinType}`
+      );
+      router.push("/(auth)/goals" as any);
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudo guardar el tipo de piel");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -65,13 +92,13 @@ export default function SkinType() {
             </Text>
             <View className="flex-row justify-center flex-wrap w-full">
               {skinTypes.map((type) => {
-                const isSelected = selectedSkinType === type.title;
+                const isSelected = selectedSkinType === type.value;
 
                 return (
                   <TouchableOpacity
                     key={type.id}
                     className="m-2 mb-4"
-                    onPress={() => setSelectedSkinType(type.title)}
+                    onPress={() => setSelectedSkinType(type.value)}
                   >
                     <ImageBackground
                       source={type.image}
@@ -119,14 +146,16 @@ export default function SkinType() {
             className={`rounded-2xl py-4 mb-4 ${
               selectedSkinType ? "bg-primaryPink" : "bg-gray-300"
             }`}
-            onPress={() => {
-              router.push("/(auth)/goals");
-            }}
-            disabled={selectedSkinType === ""}
+            onPress={handleContinue} // ← cambiar
+            disabled={!selectedSkinType || isLoading} // ← cambiar
           >
-            <Text className="text-white text-center font-semibold text-lg">
-              Continuar
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-center font-semibold text-lg">
+                Continuar
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
