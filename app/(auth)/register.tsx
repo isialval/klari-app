@@ -21,11 +21,13 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nombre, setNombre] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // ← agregar
-  const { register } = useAuth(); // ← agregar
+  const [isLoading, setIsLoading] = useState(false);
+  const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!email || !nombre || !password || !confirmPassword) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !nombre || !password || !confirmPassword) {
       Alert.alert("Error", "Por favor completa todos los campos");
       return;
     }
@@ -42,7 +44,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register(nombre, email, password);
+      await register(nombre, normalizedEmail, password);
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {
@@ -146,7 +148,7 @@ export default function Register() {
 
             <TouchableOpacity
               className=""
-              onPress={() => router.push("/(auth)/login")}
+              onPress={() => router.replace("/(auth)/login")}
             >
               <Text className="text-gray-500 text-center">
                 ¿Ya tienes una cuenta?{" "}

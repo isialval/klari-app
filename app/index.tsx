@@ -32,7 +32,7 @@ export default function Index() {
 
           <TouchableOpacity
             className="bg-secondaryPink rounded-2xl py-4 mb-4"
-            onPress={() => router.push("/(auth)/login")}
+            onPress={() => router.replace("/(auth)/login")}
           >
             <Text className="text-white text-center font-semibold text-lg">
               Iniciar Sesión
@@ -43,7 +43,7 @@ export default function Index() {
 
           <TouchableOpacity
             className="bg-primaryPink rounded-2xl py-4"
-            onPress={() => router.push("/(auth)/register")}
+            onPress={() => router.replace("/(auth)/register")}
           >
             <Text className="text-white text-center font-semibold text-lg">
               Crear Cuenta

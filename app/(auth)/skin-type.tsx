@@ -50,8 +50,8 @@ const skinTypes = [
 
 export default function SkinType() {
   const [selectedSkinType, setSelectedSkinType] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // ← agregar
-  const { user } = useAuth(); // ← agregar
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
   const handleContinue = async () => {
     if (!selectedSkinType || !user) return;
@@ -61,7 +61,7 @@ export default function SkinType() {
       await api.patch(
         `/users/${user.id}/skin-type?skinType=${selectedSkinType}`
       );
-      router.push("/(auth)/goals" as any);
+      router.replace("/(auth)/goals" as any);
     } catch (error: any) {
       Alert.alert("Error", "No se pudo guardar el tipo de piel");
     } finally {
@@ -146,8 +146,8 @@ export default function SkinType() {
             className={`rounded-2xl py-4 mb-4 ${
               selectedSkinType ? "bg-primaryPink" : "bg-gray-300"
             }`}
-            onPress={handleContinue} // ← cambiar
-            disabled={!selectedSkinType || isLoading} // ← cambiar
+            onPress={handleContinue}
+            disabled={!selectedSkinType || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />

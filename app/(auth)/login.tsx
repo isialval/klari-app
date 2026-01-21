@@ -23,16 +23,17 @@ export default function Login() {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
       Alert.alert("Error", "Por favor completa todos los campos");
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login(normalizedEmail, password);
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Error", "Email o contraseña incorrectos");
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +112,7 @@ export default function Login() {
 
             <TouchableOpacity
               className=""
-              onPress={() => router.push("/(auth)/register")}
+              onPress={() => router.replace("/(auth)/register")}
             >
               <Text className="text-gray-500 text-center">
                 ¿No tienes una cuenta?{" "}

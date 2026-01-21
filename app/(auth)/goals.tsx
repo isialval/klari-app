@@ -98,7 +98,7 @@ export default function Goals() {
             </Text>
             <View className="flex w-full">
               {goals.map((goal) => {
-                const isSelected = selectedGoals.includes(goal.value); // ← cambiar
+                const isSelected = selectedGoals.includes(goal.value);
                 return (
                   <TouchableOpacity
                     key={goal.id}
@@ -149,7 +149,7 @@ export default function Goals() {
               selectedGoals.length > 0 ? "bg-primaryPink" : "bg-gray-300"
             }`}
             onPress={handleChangeGoals}
-            disabled={selectedGoals.length === 0 || isLoading} // ← agregar isLoading
+            disabled={selectedGoals.length === 0 || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
