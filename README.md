@@ -14,13 +14,20 @@ Aplicación mobile de skincare desarrollada con **React Native (Expo)** y **Type
 
 - **Día:** limpiador, sérum, hidratante y protector solar.
 - **Noche:** limpiador, sérum e hidratante.
-- Las rutinas pueden editarse cambiando productos desde sugerencias del sistema, favoritos o mis productos.
+- Las rutinas pueden editarse añadiendo, quitando o reemplazando pasos y productos desde sugerencias del sistema, favoritos o mis productos.
 
 ## 🛠️ Stack
 
 - React Native + Expo
 - TypeScript
 - Tailwind CSS (NativeWind)
+
+## 🔗 Backend / API
+
+Esta aplicación consume una API REST desarrollada en **Spring Boot**.
+
+👉 **Repositorio del backend:**
+https://github.com/isialval/klari-api
 
 ## 👤 Mi rol
 
