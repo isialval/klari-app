@@ -1,50 +1,84 @@
-# Welcome to your Expo app 👋
+# Klari — Skincare Routine App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación mobile de skincare desarrollada con **React Native (Expo)** y **TypeScript**, enfocada en la creación y gestión de rutinas personalizadas según el tipo de piel y las metas del usuario.
 
-## Get started
+## ✨ Qué hace
 
-1. Install dependencies
+- Onboarding donde el usuario define su tipo de piel (seca, normal, mixta, grasa o sensible) y sus metas (poros, manchas, líneas de expresión, etc.).
+- Generación automática de rutinas de día y noche según el perfil del usuario.
+- Exploración de productos por categoría (limpiadores, tónicos, sérums, hidratantes, etc.).
+- Gestión de favoritos y mis productos.
+- Edición completa de rutinas con productos sugeridos por el sistema o seleccionados por el usuario.
 
-   ```bash
-   npm install
-   ```
+## 🧴 Rutinas personalizadas
 
-2. Start the app
+- **Día:** limpiador, sérum, hidratante y protector solar.
+- **Noche:** limpiador, sérum e hidratante.
+- Las rutinas pueden editarse cambiando productos desde sugerencias del sistema, favoritos o mis productos.
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Stack
 
-In the output, you'll find options to open the app in a
+- React Native + Expo
+- TypeScript
+- Tailwind CSS (NativeWind)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 👤 Mi rol
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Desarrollo completo del frontend
+- Integración con API REST
+- Manejo de estado y navegación
 
-## Get a fresh project
+## ⚙️ Configuración (.env)
 
-When you're ready, run:
+Esta app consume una API REST desarrollada en Spring Boot.
 
-```bash
-npm run reset-project
+1. Copia el archivo de ejemplo:
+
+```
+cp .env.example .env
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Configura la URL de la API:
 
-## Learn more
+```
+EXPO_PUBLIC_API_URL=http://localhost:8080/api
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+> Nota: en un dispositivo físico debes usar la IP local de tu PC
+> (ej: [http://192.168.x.x:8080/api](http://192.168.x.x:8080/api))
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🚀 Cómo correr el proyecto
 
-## Join the community
+1. Instala dependencias:
 
-Join our community of developers creating universal apps.
+```
+npm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+2. Inicia la app:
+
+```
+npx expo start
+```
+
+Luego puedes abrirla en Expo Go, un emulador Android o el simulador iOS.
+
+## Vista Previa
+
+### Onboarding
+
+<p align="center">
+  <img src="assets/preview/1.gif" width="200" />
+</p>
+
+### Rutinas personalizadas
+
+<p align="center">
+  <img src="assets/preview/2.gif" width="200" />
+</p>
+
+## 💡 Aprendizajes
+
+- Implementación de flujos de personalización basados en preferencias del usuario
+- Integración frontend–backend en aplicaciones móviles
+- Organización de proyectos con file-based routing en Expo

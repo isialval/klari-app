@@ -123,13 +123,9 @@ export default function RoutineScreen() {
 
         <View className="flex-1 items-center justify-center px-8">
           <Image
-            source={
-              isDay
-                ? require("../../assets/images/day.jpg")
-                : require("../../assets/images/night.jpg")
-            }
-            style={{ width: 150, height: 150, borderRadius: 75 }}
-            resizeMode="cover"
+            source={require("../../assets/images/serum-empty.jpg")}
+            style={{ width: 200, height: 200 }}
+            resizeMode="contain"
           />
           <Text className="text-secondaryPink text-lg text-center mt-6">
             Aún no has creado tu rutina

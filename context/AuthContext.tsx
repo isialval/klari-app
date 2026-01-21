@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem("user");
     setToken(null);
     setUser(null);
-    router.replace("/(auth)/login" as any);
+    router.replace("/" as any);
   };
 
   return (

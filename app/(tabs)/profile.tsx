@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ImageBackground,
   ScrollView,
@@ -11,89 +11,153 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRoutine } from "../../context/RoutineContext";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
 
 const skinTypes = [
   {
     id: 1,
     title: "Normal",
+    value: "NORMAL",
     image: require("../../assets/images/skintypes/piel_normal.jpg"),
   },
   {
     id: 2,
     title: "Seca",
+    value: "SECA",
     image: require("../../assets/images/skintypes/piel_seca.jpg"),
   },
   {
     id: 3,
     title: "Grasa",
+    value: "GRASA",
     image: require("../../assets/images/skintypes/piel_grasa.jpg"),
   },
   {
     id: 4,
     title: "Mixta",
+    value: "MIXTA",
     image: require("../../assets/images/skintypes/piel_mixta.jpg"),
   },
   {
     id: 5,
     title: "Sensible",
+    value: "SENSIBLE",
     image: require("../../assets/images/skintypes/piel_sensible.jpg"),
   },
 ];
 
 const goals = [
-  { id: 1, text: "Mejorar la textura de mi piel" },
-  { id: 2, text: "Reducir manchas" },
-  { id: 3, text: "Reducir rojeces e irritación" },
-  { id: 4, text: "Prevenir y tratar lineas de expresión" },
-  { id: 5, text: "Minimizar poros" },
+  { id: 1, text: "Mejorar la textura de mi piel", value: "TEXTURA" },
+  { id: 2, text: "Reducir manchas", value: "MANCHAS" },
+  { id: 3, text: "Reducir rojeces e irritación", value: "IRRITACION" },
+  {
+    id: 4,
+    text: "Prevenir y tratar lineas de expresión",
+    value: "LINEAS_EXPRESION",
+  },
+  { id: 5, text: "Minimizar poros", value: "POROS" },
 ];
 
 export default function ProfileScreen() {
-  const { userProfile, setSkinType, setGoals } = useRoutine();
+  const { user, logout } = useAuth();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedSkinType, setSelectedSkinType] = useState(
-    userProfile.skinType
-  );
-  const [selectedGoals, setSelectedGoals] = useState<string[]>(
-    userProfile.goals
-  );
+  const [isSaving, setIsSaving] = useState(false);
 
-  const currentSkinType = skinTypes.find(
-    (s) => s.title === userProfile.skinType
-  );
+  const [userSkinType, setUserSkinType] = useState<string>("");
+  const [userGoals, setUserGoals] = useState<string[]>([]);
 
-  const toggleGoal = (goalText: string) => {
+  const [selectedSkinType, setSelectedSkinType] = useState<string>("");
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const { data } = await api.get(`/users/${user.id}`);
+      setUserSkinType(data.skinType || "");
+      setUserGoals(data.goals || []);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const currentSkinType = skinTypes.find((s) => s.value === userSkinType);
+
+  const toggleGoal = (goalValue: string) => {
     if (!isEditing) return;
     setSelectedGoals((prev) => {
-      if (prev.includes(goalText)) {
-        return prev.filter((g) => g !== goalText);
+      if (prev.includes(goalValue)) {
+        return prev.filter((g) => g !== goalValue);
       } else {
-        return [...prev, goalText];
+        return [...prev, goalValue];
       }
     });
   };
 
   const handleEdit = () => {
-    setSelectedSkinType(userProfile.skinType);
-    setSelectedGoals(userProfile.goals);
+    setSelectedSkinType(userSkinType);
+    setSelectedGoals([...userGoals]);
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    setSelectedSkinType(userProfile.skinType);
-    setSelectedGoals(userProfile.goals);
+    setSelectedSkinType(userSkinType);
+    setSelectedGoals([...userGoals]);
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    setSkinType(selectedSkinType);
-    setGoals(selectedGoals);
-    setIsEditing(false);
-    Alert.alert("Éxito", "Perfil actualizado correctamente");
+  const handleSave = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      await api.patch(
+        `/users/${user.id}/skin-type?skinType=${selectedSkinType}`
+      );
+
+      for (const goal of userGoals) {
+        if (!selectedGoals.includes(goal)) {
+          await api.delete(`/users/${user.id}/goals/${goal}`);
+        }
+      }
+      for (const goal of selectedGoals) {
+        if (!userGoals.includes(goal)) {
+          await api.post(`/users/${user.id}/goals/${goal}`);
+        }
+      }
+
+      setUserSkinType(selectedSkinType);
+      setUserGoals(selectedGoals);
+      setIsEditing(false);
+      Alert.alert(
+        "Perfil actualizado",
+        "Tus preferencias han sido guardadas. Te recomendamos revisar tu rutina para asegurarte de que los productos sean adecuados para tu nuevo perfil.",
+        [{ text: "Entendido" }]
+      );
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el perfil");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-backgroundPink justify-center items-center">
+        <ActivityIndicator size="large" color="#BB6276" />
+      </SafeAreaView>
+    );
+  }
   if (!isEditing) {
     return (
       <SafeAreaView
@@ -157,7 +221,9 @@ export default function ProfileScreen() {
               )}
               <View className="ml-4 flex-1">
                 <Text className="text-gray-800 font-semibold text-lg">
-                  Piel {userProfile.skinType}
+                  Piel{" "}
+                  {skinTypes.find((s) => s.value === userSkinType)?.title ||
+                    userSkinType}
                 </Text>
               </View>
             </View>
@@ -169,22 +235,27 @@ export default function ProfileScreen() {
             </Text>
 
             <View className="bg-white rounded-2xl p-4">
-              {userProfile.goals.length > 0 ? (
-                userProfile.goals.map((goal, index) => (
-                  <View
-                    key={index}
-                    className={`flex-row items-center ${
-                      index < userProfile.goals.length - 1
-                        ? "mb-3 pb-3 border-b border-gray-100"
-                        : ""
-                    }`}
-                  >
-                    <View className="w-6 h-6 rounded-full bg-primaryPink items-center justify-center mr-3">
-                      <Ionicons name="checkmark" size={14} color="white" />
+              {userGoals.length > 0 ? (
+                userGoals.map((goalValue, index) => {
+                  const goalInfo = goals.find((g) => g.value === goalValue);
+                  return (
+                    <View
+                      key={index}
+                      className={`flex-row items-center ${
+                        index < userGoals.length - 1
+                          ? "mb-3 pb-3 border-b border-gray-100"
+                          : ""
+                      }`}
+                    >
+                      <View className="w-6 h-6 rounded-full bg-primaryPink items-center justify-center mr-3">
+                        <Ionicons name="checkmark" size={14} color="white" />
+                      </View>
+                      <Text className="text-gray-700 flex-1">
+                        {goalInfo?.text || goalValue}
+                      </Text>
                     </View>
-                    <Text className="text-gray-700 flex-1">{goal}</Text>
-                  </View>
-                ))
+                  );
+                })
               ) : (
                 <Text className="text-gray-400 text-center italic">
                   No has seleccionado metas
@@ -208,7 +279,7 @@ export default function ProfileScreen() {
           <View className="mx-4 mt-4">
             <TouchableOpacity
               className="bg-white rounded-2xl p-4 flex-row items-center justify-center"
-              onPress={() => router.replace("/(auth)/login")}
+              onPress={logout}
             >
               <Ionicons name="log-out-outline" size={22} color="#ef4444" />
               <Text className="text-red-500 ml-2 font-semibold">
@@ -238,8 +309,12 @@ export default function ProfileScreen() {
           <Text className="text-primaryPink text-xl font-semibold">
             Editar Perfil
           </Text>
-          <TouchableOpacity onPress={handleSave}>
-            <Ionicons name="checkmark" size={28} color="#580423" />
+          <TouchableOpacity onPress={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#580423" />
+            ) : (
+              <Ionicons name="checkmark" size={28} color="#580423" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -250,13 +325,13 @@ export default function ProfileScreen() {
 
           <View className="flex-row justify-center flex-wrap">
             {skinTypes.map((type) => {
-              const isSelected = selectedSkinType === type.title;
+              const isSelected = selectedSkinType === type.value;
 
               return (
                 <TouchableOpacity
                   key={type.id}
                   className="m-1"
-                  onPress={() => setSelectedSkinType(type.title)}
+                  onPress={() => setSelectedSkinType(type.value)}
                 >
                   <ImageBackground
                     source={type.image}
@@ -305,7 +380,7 @@ export default function ProfileScreen() {
           </Text>
 
           {goals.map((goal) => {
-            const isSelected = selectedGoals.includes(goal.text);
+            const isSelected = selectedGoals.includes(goal.value);
             return (
               <TouchableOpacity
                 key={goal.id}
@@ -314,7 +389,7 @@ export default function ProfileScreen() {
                     ? "border-primaryPink bg-pink-50"
                     : "border-gray-200 bg-white"
                 }`}
-                onPress={() => toggleGoal(goal.text)}
+                onPress={() => toggleGoal(goal.value)}
               >
                 <Text
                   className={`flex-1 text-sm ${
@@ -342,12 +417,19 @@ export default function ProfileScreen() {
 
         <View className="mx-4 mb-4">
           <TouchableOpacity
-            className="bg-primaryPink rounded-2xl py-4"
+            className={`rounded-2xl py-4 ${
+              isSaving ? "bg-gray-300" : "bg-primaryPink"
+            }`}
             onPress={handleSave}
+            disabled={isSaving}
           >
-            <Text className="text-white text-center font-semibold text-lg">
-              Guardar cambios
-            </Text>
+            {isSaving ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-center font-semibold text-lg">
+                Guardar cambios
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

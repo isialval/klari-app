@@ -1,26 +1,88 @@
-import {
-  getCategoryById,
-  getGoalById,
-  getProductById,
-  getSkinTypeById,
-} from "@/constants/products";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
+import { productService } from "../../services/productService";
+import { userService } from "../../services/userService";
+import { Product } from "../../types/product";
 
-const INITIAL_FAVORITES = [1, 3, 5, 8];
-const INITIAL_MY_PRODUCTS = [2, 5, 7, 10];
+const categoryNames: Record<string, string> = {
+  LIMPIADOR: "Limpiador",
+  TONICO: "Tónico",
+  SERUM: "Serum",
+  CONTORNO_OJOS: "Contorno de ojos",
+  HIDRATANTE: "Hidratante",
+  MASCARILLA: "Mascarilla",
+  PROTECTOR_SOLAR: "Protector solar",
+};
+
+const skinTypeNames: Record<string, string> = {
+  NORMAL: "Normal",
+  SECA: "Seca",
+  GRASA: "Grasa",
+  MIXTA: "Mixta",
+  SENSIBLE: "Sensible",
+};
+
+const goalNames: Record<string, string> = {
+  TEXTURA: "Mejorar la textura de mi piel",
+  MANCHAS: "Reducir manchas",
+  IRRITACION: "Reducir rojeces e irritación",
+  LINEAS_EXPRESION: "Prevenir y tratar lineas de expresión",
+  POROS: "Minimizar poros",
+};
+
+const applicationTimeLabels: Record<string, { label: string; icon: string }> = {
+  DIA: { label: "Uso de día", icon: "sunny-outline" },
+  NOCHE: { label: "Uso de noche", icon: "moon-outline" },
+  AMBOS: { label: "Día y noche", icon: "time-outline" },
+};
 
 export default function ProductDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
 
-  const [favorites, setFavorites] = useState<number[]>(INITIAL_FAVORITES);
-  const [myProducts, setMyProducts] = useState<number[]>(INITIAL_MY_PRODUCTS);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInMyProducts, setIsInMyProducts] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [isTogglingInventory, setIsTogglingInventory] = useState(false);
 
-  const product = getProductById(Number(id));
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  const loadData = async () => {
+    if (!user || !id) return;
+
+    setIsLoading(true);
+    try {
+      const [productData, favoritesData, inventoryData] = await Promise.all([
+        productService.getById(Number(id)),
+        userService.getFavorites(user.id),
+        userService.getInventory(user.id),
+      ]);
+
+      setProduct(productData);
+      setIsFavorite(favoritesData.some((p) => p.id === Number(id)));
+      setIsInMyProducts(inventoryData.some((p) => p.id === Number(id)));
+    } catch (error) {
+      console.error("Error loading product:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!product) {
     return (
@@ -37,59 +99,49 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const category = getCategoryById(product.categoryId);
-  const productSkinTypes = product.skinTypeIds
-    .map((id) => getSkinTypeById(id))
-    .filter(Boolean);
-  const productGoals = product.goalIds
-    .map((id) => getGoalById(id))
-    .filter(Boolean);
+  const toggleFavorite = async () => {
+    if (!user || !product) return;
 
-  const isFavorite = favorites.includes(product.id);
-  const isInMyProducts = myProducts.includes(product.id);
-
-  const toggleFavorite = () => {
-    setFavorites((prev) =>
-      prev.includes(product.id)
-        ? prev.filter((x) => x !== product.id)
-        : [...prev, product.id]
-    );
-  };
-
-  const toggleMyProduct = () => {
-    setMyProducts((prev) =>
-      prev.includes(product.id)
-        ? prev.filter((x) => x !== product.id)
-        : [...prev, product.id]
-    );
-  };
-
-  const getUseTimeIcon = () => {
-    switch (product.useTime) {
-      case "día":
-        return "sunny-outline";
-      case "noche":
-        return "moon-outline";
-      case "ambos":
-        return "time-outline";
-      default:
-        return "time-outline";
+    setIsTogglingFavorite(true);
+    try {
+      if (isFavorite) {
+        await userService.removeFavorite(user.id, product.id);
+      } else {
+        await userService.addFavorite(user.id, product.id);
+      }
+      setIsFavorite(!isFavorite);
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    } finally {
+      setIsTogglingFavorite(false);
     }
   };
 
-  const getUseTimeLabel = () => {
-    switch (product.useTime) {
-      case "día":
-        return "Uso de día";
-      case "noche":
-        return "Uso de noche";
-      case "ambos":
-        return "Día y noche";
-      default:
-        return product.useTime;
+  const toggleMyProduct = async () => {
+    if (!user || !product) return;
+
+    setIsTogglingInventory(true);
+    try {
+      if (isInMyProducts) {
+        await userService.removeFromInventory(user.id, product.id);
+      } else {
+        await userService.addToInventory(user.id, product.id);
+      }
+      setIsInMyProducts(!isInMyProducts);
+    } catch (error) {
+      console.error("Error toggling inventory:", error);
+    } finally {
+      setIsTogglingInventory(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#BB6276" />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -117,7 +169,7 @@ export default function ProductDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <Image
-          source={product.image}
+          source={{ uri: product.imageUrl }}
           style={{ width: "100%", height: 300 }}
           resizeMode="cover"
         />
@@ -129,7 +181,7 @@ export default function ProductDetailScreen() {
             </Text>
             <View className="bg-lightPink px-3 py-1 rounded-full">
               <Text className="text-primaryPink text-xs font-medium">
-                {category?.name}
+                {categoryNames[product.category] || product.category}
               </Text>
             </View>
           </View>
@@ -140,12 +192,16 @@ export default function ProductDetailScreen() {
 
           <View className="flex-row items-center mt-3 bg-gray-50 self-start px-3 py-2 rounded-lg">
             <Ionicons
-              name={getUseTimeIcon() as any}
+              name={
+                (applicationTimeLabels[product.applicationTime]?.icon as any) ||
+                "time-outline"
+              }
               size={18}
               color="#6B7280"
             />
             <Text className="text-gray-600 text-sm ml-2">
-              {getUseTimeLabel()}
+              {applicationTimeLabels[product.applicationTime]?.label ||
+                product.applicationTime}
             </Text>
           </View>
         </View>
@@ -173,13 +229,13 @@ export default function ProductDetailScreen() {
             Apto para pieles
           </Text>
           <View className="flex-row flex-wrap gap-2">
-            {productSkinTypes.map((skinType) => (
+            {product.skinTypes.map((skinType) => (
               <View
-                key={skinType?.id}
+                key={skinType}
                 className="bg-green-50 border border-green-200 px-4 py-2 rounded-full"
               >
                 <Text className="text-green-700 text-sm font-medium">
-                  {skinType?.name}
+                  {skinTypeNames[skinType] || skinType}
                 </Text>
               </View>
             ))}
@@ -191,16 +247,16 @@ export default function ProductDetailScreen() {
             Te ayuda a
           </Text>
           <View className="gap-2">
-            {productGoals.map((goal) => (
+            {product.goals.map((goal) => (
               <View
-                key={goal?.id}
+                key={goal}
                 className="flex-row items-center bg-pink-50 p-3 rounded-xl"
               >
                 <View className="w-6 h-6 rounded-full bg-primaryPink items-center justify-center mr-3">
                   <Ionicons name="checkmark" size={14} color="white" />
                 </View>
                 <Text className="text-gray-700 flex-1 text-sm">
-                  {goal?.name}
+                  {goalNames[goal] || goal}
                 </Text>
               </View>
             ))}
@@ -216,19 +272,29 @@ export default function ProductDetailScreen() {
                 : "border-gray-200 bg-white"
             }`}
             onPress={toggleFavorite}
+            disabled={isTogglingFavorite}
           >
-            <Ionicons
-              name={isFavorite ? "heart" : "heart-outline"}
-              size={20}
-              color={isFavorite ? "#E91E63" : "#6B7280"}
-            />
-            <Text
-              className={`ml-2 font-medium ${
-                isFavorite ? "text-pink-500" : "text-gray-600"
-              }`}
-            >
-              {isFavorite ? "En favoritos" : "Favorito"}
-            </Text>
+            {isTogglingFavorite ? (
+              <ActivityIndicator
+                size="small"
+                color={isFavorite ? "#E91E63" : "#6B7280"}
+              />
+            ) : (
+              <>
+                <Ionicons
+                  name={isFavorite ? "heart" : "heart-outline"}
+                  size={20}
+                  color={isFavorite ? "#E91E63" : "#6B7280"}
+                />
+                <Text
+                  className={`ml-2 font-medium ${
+                    isFavorite ? "text-pink-500" : "text-gray-600"
+                  }`}
+                >
+                  {isFavorite ? "En favoritos" : "Favorito"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -236,15 +302,24 @@ export default function ProductDetailScreen() {
               isInMyProducts ? "bg-green-500" : "bg-primaryPink"
             }`}
             onPress={toggleMyProduct}
+            disabled={isTogglingInventory}
           >
-            <Ionicons
-              name={isInMyProducts ? "checkmark-circle" : "add-circle-outline"}
-              size={20}
-              color="white"
-            />
-            <Text className="ml-2 font-medium text-white">
-              {isInMyProducts ? "En mi inventario" : "Agregar"}
-            </Text>
+            {isTogglingInventory ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <>
+                <Ionicons
+                  name={
+                    isInMyProducts ? "checkmark-circle" : "add-circle-outline"
+                  }
+                  size={20}
+                  color="white"
+                />
+                <Text className="ml-2 font-medium text-white">
+                  {isInMyProducts ? "En mi inventario" : "Agregar"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
