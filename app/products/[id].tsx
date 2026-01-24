@@ -68,36 +68,24 @@ export default function ProductDetailScreen() {
 
     setIsLoading(true);
     try {
-      const [productData, favoritesData, inventoryData] = await Promise.all([
-        productService.getById(Number(id)),
-        userService.getFavorites(user.id),
-        userService.getInventory(user.id),
+      const productId = Number(id);
+
+      // Cargar producto y verificar estados en paralelo
+      const [productData, isFav, isInv] = await Promise.all([
+        productService.getById(productId),
+        userService.isFavorite(user.id, productId),
+        userService.isInInventory(user.id, productId),
       ]);
 
-      setProduct(productData);
-      setIsFavorite(favoritesData.some((p) => p.id === Number(id)));
-      setIsInMyProducts(inventoryData.some((p) => p.id === Number(id)));
+      setProduct(productData as any);
+      setIsFavorite(isFav);
+      setIsInMyProducts(isInv);
     } catch (error) {
       console.error("Error loading product:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (!product) {
-    return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <Ionicons name="alert-circle-outline" size={48} color="#ccc" />
-        <Text className="text-gray-400 mt-4">Producto no encontrado</Text>
-        <TouchableOpacity
-          className="mt-4 bg-primaryPink px-6 py-2 rounded-full"
-          onPress={() => router.back()}
-        >
-          <Text className="text-white">Volver</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
 
   const toggleFavorite = async () => {
     if (!user || !product) return;
@@ -142,6 +130,22 @@ export default function ProductDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  if (!product) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <Ionicons name="alert-circle-outline" size={48} color="#ccc" />
+        <Text className="text-gray-400 mt-4">Producto no encontrado</Text>
+        <TouchableOpacity
+          className="mt-4 bg-primaryPink px-6 py-2 rounded-full"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white">Volver</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -263,6 +267,7 @@ export default function ProductDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 pb-8">
         <View className="flex-row gap-3">
           <TouchableOpacity

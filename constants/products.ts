@@ -6,7 +6,7 @@ export const categories = [
   { id: 4, name: "Serum", value: "SERUM" },
   { id: 5, name: "Protector solar", value: "PROTECTOR_SOLAR" },
   { id: 6, name: "Mascarilla", value: "MASCARILLA" },
-  { id: 7, name: "Contorno de ojos", value: "CONTORNO_OJOS" },
+  { id: 7, name: "Contorno de ojos", value: "CONTORNO_DE_OJOS" },
 ];
 
 export const skinTypes = [
@@ -35,8 +35,10 @@ export const products = [
     categoryId: 1,
     image: require("@/assets/images/product.jpg"),
     useTime: "noche" as UseTime,
-    description: "Crema de contorno de ojos con retinol al 0.2% que ayuda a reducir las líneas finas y arrugas alrededor de los ojos. Fórmula suave pero efectiva.",
-    ingredients: "Aqua, Retinol, Squalane, Caprylic/Capric Triglyceride, Cetearyl Alcohol, Glycerin, Sodium Hyaluronate",
+    description:
+      "Crema de contorno de ojos con retinol al 0.2% que ayuda a reducir las líneas finas y arrugas alrededor de los ojos. Fórmula suave pero efectiva.",
+    ingredients:
+      "Aqua, Retinol, Squalane, Caprylic/Capric Triglyceride, Cetearyl Alcohol, Glycerin, Sodium Hyaluronate",
     skinTypeIds: [1, 2, 4],
     goalIds: [4, 5],
   },
@@ -47,8 +49,10 @@ export const products = [
     categoryId: 1,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Solución concentrada de cafeína al 5% y EGCG para reducir la apariencia de ojeras y bolsas bajo los ojos.",
-    ingredients: "Aqua, Caffeine, Maltodextrin, Glycerin, EGCG, Sodium Hyaluronate, Propanediol",
+    description:
+      "Solución concentrada de cafeína al 5% y EGCG para reducir la apariencia de ojeras y bolsas bajo los ojos.",
+    ingredients:
+      "Aqua, Caffeine, Maltodextrin, Glycerin, EGCG, Sodium Hyaluronate, Propanediol",
     skinTypeIds: [1, 2, 3, 4, 5],
     goalIds: [1],
   },
@@ -59,8 +63,10 @@ export const products = [
     categoryId: 2,
     image: require("@/assets/images/product.jpg"),
     useTime: "noche" as UseTime,
-    description: "Tónico exfoliante con 5% de ácido glicólico que ayuda a mejorar la textura de la piel y reducir la apariencia de poros.",
-    ingredients: "Aqua, Glycolic Acid, Aloe Vera, Ginseng Extract, Witch Hazel, Glycerin",
+    description:
+      "Tónico exfoliante con 5% de ácido glicólico que ayuda a mejorar la textura de la piel y reducir la apariencia de poros.",
+    ingredients:
+      "Aqua, Glycolic Acid, Aloe Vera, Ginseng Extract, Witch Hazel, Glycerin",
     skinTypeIds: [1, 3, 4],
     goalIds: [1, 2, 5],
   },
@@ -71,8 +77,10 @@ export const products = [
     categoryId: 2,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Tónico hidratante sin fragancia formulado para pieles sensibles. Proporciona hidratación profunda y calma la piel irritada.",
-    ingredients: "Aqua, Butylene Glycol, Dimethyl Sulfone, Betaine, Centella Asiatica Extract, Glycerin",
+    description:
+      "Tónico hidratante sin fragancia formulado para pieles sensibles. Proporciona hidratación profunda y calma la piel irritada.",
+    ingredients:
+      "Aqua, Butylene Glycol, Dimethyl Sulfone, Betaine, Centella Asiatica Extract, Glycerin",
     skinTypeIds: [1, 2, 5],
     goalIds: [1, 3],
   },
@@ -83,8 +91,10 @@ export const products = [
     categoryId: 3,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Crema hidratante con ceramidas esenciales y ácido hialurónico que restaura la barrera protectora de la piel.",
-    ingredients: "Aqua, Glycerin, Cetearyl Alcohol, Ceramide NP, Ceramide AP, Ceramide EOP, Hyaluronic Acid, Niacinamide",
+    description:
+      "Crema hidratante con ceramidas esenciales y ácido hialurónico que restaura la barrera protectora de la piel.",
+    ingredients:
+      "Aqua, Glycerin, Cetearyl Alcohol, Ceramide NP, Ceramide AP, Ceramide EOP, Hyaluronic Acid, Niacinamide",
     skinTypeIds: [1, 2, 4, 5],
     goalIds: [1, 3],
   },
@@ -95,8 +105,10 @@ export const products = [
     categoryId: 3,
     image: require("@/assets/images/product.jpg"),
     useTime: "día" as UseTime,
-    description: "Crema-gel ligera que libera una explosión de nutrientes hidratantes. Ideal para pieles grasas o mixtas.",
-    ingredients: "Aqua, Glycerin, Squalane, Japanese Wild Rose, Japanese Leopard Lily, Hadasei-3",
+    description:
+      "Crema-gel ligera que libera una explosión de nutrientes hidratantes. Ideal para pieles grasas o mixtas.",
+    ingredients:
+      "Aqua, Glycerin, Squalane, Japanese Wild Rose, Japanese Leopard Lily, Hadasei-3",
     skinTypeIds: [1, 3, 4],
     goalIds: [1, 5],
   },
@@ -107,8 +119,10 @@ export const products = [
     categoryId: 4,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Serum con 10% de niacinamida y 1% de zinc que ayuda a regular la producción de sebo y minimizar la apariencia de poros.",
-    ingredients: "Aqua, Niacinamide, Zinc PCA, Pentylene Glycol, Glycerin, Sodium Hyaluronate",
+    description:
+      "Serum con 10% de niacinamida y 1% de zinc que ayuda a regular la producción de sebo y minimizar la apariencia de poros.",
+    ingredients:
+      "Aqua, Niacinamide, Zinc PCA, Pentylene Glycol, Glycerin, Sodium Hyaluronate",
     skinTypeIds: [1, 3, 4],
     goalIds: [1, 5],
   },
@@ -119,8 +133,10 @@ export const products = [
     categoryId: 4,
     image: require("@/assets/images/product.jpg"),
     useTime: "día" as UseTime,
-    description: "Serum antioxidante con 15% de vitamina C pura, vitamina E y ácido ferúlico. Protege contra el daño ambiental y aclara manchas.",
-    ingredients: "Aqua, L-Ascorbic Acid, Ethoxydiglycol, Propylene Glycol, Glycerin, Ferulic Acid, Tocopherol",
+    description:
+      "Serum antioxidante con 15% de vitamina C pura, vitamina E y ácido ferúlico. Protege contra el daño ambiental y aclara manchas.",
+    ingredients:
+      "Aqua, L-Ascorbic Acid, Ethoxydiglycol, Propylene Glycol, Glycerin, Ferulic Acid, Tocopherol",
     skinTypeIds: [1, 2, 4],
     goalIds: [2, 4],
   },
@@ -131,8 +147,10 @@ export const products = [
     categoryId: 4,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Serum con ácido hialurónico de bajo, medio y alto peso molecular para hidratación en múltiples capas de la piel.",
-    ingredients: "Aqua, Sodium Hyaluronate, Sodium Hyaluronate Crosspolymer, Pentylene Glycol, Glycerin",
+    description:
+      "Serum con ácido hialurónico de bajo, medio y alto peso molecular para hidratación en múltiples capas de la piel.",
+    ingredients:
+      "Aqua, Sodium Hyaluronate, Sodium Hyaluronate Crosspolymer, Pentylene Glycol, Glycerin",
     skinTypeIds: [1, 2, 3, 4, 5],
     goalIds: [1, 4],
   },
@@ -143,8 +161,10 @@ export const products = [
     categoryId: 5,
     image: require("@/assets/images/product.jpg"),
     useTime: "día" as UseTime,
-    description: "Protector solar de amplio espectro con SPF50 y textura ultra ligera. No deja residuo blanco y es resistente al agua.",
-    ingredients: "Aqua, Homosalate, Octocrylene, Ethylhexyl Salicylate, Silica, Glycerin, Tocopherol",
+    description:
+      "Protector solar de amplio espectro con SPF50 y textura ultra ligera. No deja residuo blanco y es resistente al agua.",
+    ingredients:
+      "Aqua, Homosalate, Octocrylene, Ethylhexyl Salicylate, Silica, Glycerin, Tocopherol",
     skinTypeIds: [1, 2, 3, 4, 5],
     goalIds: [2, 4],
   },
@@ -155,8 +175,10 @@ export const products = [
     categoryId: 5,
     image: require("@/assets/images/product.jpg"),
     useTime: "día" as UseTime,
-    description: "Protector solar invisible con SPF30 que se puede usar sobre el maquillaje. Fórmula ligera y no grasa.",
-    ingredients: "Aqua, Avobenzone, Homosalate, Octisalate, Glycerin, Niacinamide, Aloe Vera",
+    description:
+      "Protector solar invisible con SPF30 que se puede usar sobre el maquillaje. Fórmula ligera y no grasa.",
+    ingredients:
+      "Aqua, Avobenzone, Homosalate, Octisalate, Glycerin, Niacinamide, Aloe Vera",
     skinTypeIds: [1, 3, 4],
     goalIds: [2, 4],
   },
@@ -167,8 +189,10 @@ export const products = [
     categoryId: 6,
     image: require("@/assets/images/product.jpg"),
     useTime: "ambos" as UseTime,
-    description: "Limpiador espumoso con ceramidas y niacinamida que elimina el exceso de grasa sin resecar la piel.",
-    ingredients: "Aqua, Cocamidopropyl Hydroxysultaine, Glycerin, Sodium Lauroyl Sarcosinate, Niacinamide, Ceramide NP",
+    description:
+      "Limpiador espumoso con ceramidas y niacinamida que elimina el exceso de grasa sin resecar la piel.",
+    ingredients:
+      "Aqua, Cocamidopropyl Hydroxysultaine, Glycerin, Sodium Lauroyl Sarcosinate, Niacinamide, Ceramide NP",
     skinTypeIds: [1, 3, 4],
     goalIds: [1, 5],
   },
@@ -179,8 +203,10 @@ export const products = [
     categoryId: 6,
     image: require("@/assets/images/product.jpg"),
     useTime: "noche" as UseTime,
-    description: "Aceite limpiador que disuelve el maquillaje y las impurezas sin dejar residuo graso. Enriquecido con aceite de oliva.",
-    ingredients: "Olea Europaea Fruit Oil, Caprylic/Capric Triglyceride, Sorbeth-30, Stearyl Glycyrrhetinate, Tocopherol",
+    description:
+      "Aceite limpiador que disuelve el maquillaje y las impurezas sin dejar residuo graso. Enriquecido con aceite de oliva.",
+    ingredients:
+      "Olea Europaea Fruit Oil, Caprylic/Capric Triglyceride, Sorbeth-30, Stearyl Glycyrrhetinate, Tocopherol",
     skinTypeIds: [1, 2, 4, 5],
     goalIds: [1],
   },
@@ -191,7 +217,8 @@ export const products = [
     categoryId: 7,
     image: require("@/assets/images/product.jpg"),
     useTime: "noche" as UseTime,
-    description: "Mascarilla de arcilla bentonita 100% natural que limpia profundamente los poros y elimina impurezas.",
+    description:
+      "Mascarilla de arcilla bentonita 100% natural que limpia profundamente los poros y elimina impurezas.",
     ingredients: "100% Natural Calcium Bentonite Clay",
     skinTypeIds: [1, 3, 4],
     goalIds: [1, 5],
@@ -203,8 +230,10 @@ export const products = [
     categoryId: 7,
     image: require("@/assets/images/product.jpg"),
     useTime: "noche" as UseTime,
-    description: "Mascarilla de tela impregnada con extracto de té verde de Jeju. Hidrata y calma la piel al instante.",
-    ingredients: "Aqua, Butylene Glycol, Glycerin, Camellia Sinensis Leaf Extract, Centella Asiatica Extract",
+    description:
+      "Mascarilla de tela impregnada con extracto de té verde de Jeju. Hidrata y calma la piel al instante.",
+    ingredients:
+      "Aqua, Butylene Glycol, Glycerin, Camellia Sinensis Leaf Extract, Centella Asiatica Extract",
     skinTypeIds: [1, 2, 5],
     goalIds: [1, 3],
   },
@@ -214,6 +243,8 @@ export type Product = (typeof products)[0];
 export type Category = (typeof categories)[0];
 
 export const getProductById = (id: number) => products.find((p) => p.id === id);
-export const getCategoryById = (id: number) => categories.find((c) => c.id === id);
-export const getSkinTypeById = (id: number) => skinTypes.find((s) => s.id === id);
+export const getCategoryById = (id: number) =>
+  categories.find((c) => c.id === id);
+export const getSkinTypeById = (id: number) =>
+  skinTypes.find((s) => s.id === id);
 export const getGoalById = (id: number) => goals.find((g) => g.id === id);

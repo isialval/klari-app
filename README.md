@@ -84,6 +84,12 @@ Luego puedes abrirla en Expo Go, un emulador Android o el simulador iOS.
   <img src="assets/preview/2.gif" width="200" />
 </p>
 
+### Explorar productos
+
+<p align="center">
+  <img src="assets/preview/3.gif" width="200" />
+</p>
+
 ## 💡 Aprendizajes
 
 - Implementación de flujos de personalización basados en preferencias del usuario

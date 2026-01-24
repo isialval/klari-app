@@ -19,7 +19,7 @@ const availableSteps = [
   { id: 1, name: "Limpiador", category: "LIMPIADOR", order: 1 },
   { id: 2, name: "Tónico", category: "TONICO", order: 2 },
   { id: 3, name: "Serum", category: "SERUM", order: 3 },
-  { id: 4, name: "Contorno de ojos", category: "CONTORNO_OJOS", order: 4 },
+  { id: 4, name: "Contorno de ojos", category: "CONTORNO_DE_OJOS", order: 4 },
   { id: 5, name: "Hidratante", category: "HIDRATANTE", order: 5 },
   { id: 6, name: "Mascarilla", category: "MASCARILLA", order: 6 },
   {
@@ -46,7 +46,7 @@ export default function EditRoutineScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRoutine();
-    }, [routineId])
+    }, [routineId]),
   );
 
   const loadRoutine = async () => {
@@ -74,7 +74,7 @@ export default function EditRoutineScreen() {
 
   const getUnusedSteps = () => {
     return getAvailableStepsForType().filter(
-      (step) => !usedCategories.includes(step.category)
+      (step) => !usedCategories.includes(step.category),
     );
   };
   const handleSave = () => {
@@ -83,7 +83,7 @@ export default function EditRoutineScreen() {
 
   const handleSelectProduct = (category: string) => {
     router.push(
-      `/routine/select-product?category=${category}&type=${routineType}&routineId=${routine?.id}` as any
+      `/routine/select-product?category=${category}&type=${routineType}&routineId=${routine?.id}` as any,
     );
   };
 
@@ -136,7 +136,7 @@ export default function EditRoutineScreen() {
           .sort(
             (a, b) =>
               availableSteps.findIndex((s) => s.category === a.category) -
-              availableSteps.findIndex((s) => s.category === b.category)
+              availableSteps.findIndex((s) => s.category === b.category),
           )
           .map((product) => (
             <View key={product.id} className="flex-row items-center mb-4 px-4">

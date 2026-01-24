@@ -1,11 +1,15 @@
 import ProductCard from "@/components/ProductCard";
 import { categories } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
-import { productService } from "@/services/productService";
+import {
+  PageResponse,
+  productService,
+  ProductSummaryDTO,
+} from "@/services/productService";
 import { userService } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,9 +19,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Product } from "../types/product";
-
-const ITEMS_PER_PAGE = 6;
 
 interface ProductListBaseProps {
   title: string;
@@ -28,6 +29,8 @@ interface ProductListBaseProps {
   initialCategory?: string;
 }
 
+const PAGE_SIZE = 20;
+
 export default function ProductListBase({
   title,
   filterType,
@@ -37,148 +40,237 @@ export default function ProductListBase({
   initialCategory,
 }: ProductListBaseProps) {
   const router = useRouter();
+  const { user } = useAuth();
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [selectedCategory, setSelectedCategory] = useState<string | number>(
-    initialCategory || 0
+    initialCategory || 0,
   );
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const { user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [myProducts, setMyProducts] = useState<number[]>([]);
+
+  const [products, setProducts] = useState<ProductSummaryDTO[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [inventoryIds, setInventoryIds] = useState<Set<number>>(new Set());
+
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    setProducts([]);
+    setPage(0);
+    setHasMore(true);
+  }, [debouncedSearch, selectedCategory]);
+
+  const loadUserLists = useCallback(async () => {
     if (!user) return;
 
-    setIsLoading(true);
     try {
-      const [productsData, favoritesData, inventoryData] = await Promise.all([
-        productService.getAll(),
-        userService.getFavorites(user.id),
-        userService.getInventory(user.id),
+      const [favResponse, invResponse] = await Promise.all([
+        userService.getFavorites(user.id, 0, 1000),
+        userService.getInventory(user.id, 0, 1000),
       ]);
 
-      setProducts(productsData);
-      setFavorites(favoritesData.map((p) => p.id));
-      setMyProducts(inventoryData.map((p) => p.id));
+      setFavoriteIds(new Set(favResponse.content.map((p) => p.id)));
+      setInventoryIds(new Set(invResponse.content.map((p) => p.id)));
     } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Error loading user lists:", error);
     }
-  };
+  }, [user]);
+
+  const loadProducts = useCallback(
+    async (pageToLoad: number, reset: boolean = false) => {
+      if (!user || isLoadingRef.current) return;
+
+      isLoadingRef.current = true;
+      const isFirstPage = pageToLoad === 0;
+
+      if (isFirstPage) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      try {
+        let response: PageResponse<ProductSummaryDTO>;
+        const categoryParam =
+          selectedCategory === 0 ? undefined : (selectedCategory as string);
+        const hasSearch = debouncedSearch.trim().length > 0;
+
+        if (filterType === "favorites") {
+          response = await userService.getFavorites(
+            user.id,
+            pageToLoad,
+            PAGE_SIZE,
+            categoryParam,
+          );
+        } else if (filterType === "myProducts") {
+          response = await userService.getInventory(
+            user.id,
+            pageToLoad,
+            PAGE_SIZE,
+            categoryParam,
+          );
+        } else if (hasSearch) {
+          response = await productService.search(
+            debouncedSearch,
+            categoryParam,
+            pageToLoad,
+            PAGE_SIZE,
+          );
+        } else if (categoryParam) {
+          const categoryResponse = await productService.getByCategory(
+            categoryParam,
+            pageToLoad,
+            PAGE_SIZE,
+          );
+          response = {
+            ...categoryResponse,
+            content: categoryResponse.content.map((p) => ({
+              id: p.id,
+              name: p.name,
+              brand: p.brand,
+              imageUrl: p.imageUrl,
+              category: p.category,
+            })),
+          };
+        } else {
+          response = await productService.getPage(pageToLoad, PAGE_SIZE);
+        }
+
+        let filteredContent = response.content;
+        if (filterType && hasSearch) {
+          const searchLower = debouncedSearch.toLowerCase();
+          filteredContent = response.content.filter(
+            (p) =>
+              p.name.toLowerCase().includes(searchLower) ||
+              p.brand.toLowerCase().includes(searchLower),
+          );
+        }
+
+        if (reset || isFirstPage) {
+          setProducts(filteredContent);
+        } else {
+          setProducts((prev) => {
+            const existingIds = new Set(prev.map((p) => p.id));
+            const newProducts = filteredContent.filter(
+              (p) => !existingIds.has(p.id),
+            );
+            return [...prev, ...newProducts];
+          });
+        }
+
+        setHasMore(!response.last && response.content.length > 0);
+        setPage(pageToLoad + 1);
+      } catch (error) {
+        console.error("Error loading products:", error);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        isLoadingRef.current = false;
+      }
+    },
+    [user, filterType, selectedCategory, debouncedSearch],
+  );
+
+  useEffect(() => {
+    loadUserLists();
+  }, [loadUserLists]);
+
+  useEffect(() => {
+    loadProducts(0, true);
+  }, [debouncedSearch, selectedCategory, filterType]);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || isLoading || isLoadingMore) return;
+    loadProducts(page, false);
+  }, [hasMore, isLoading, isLoadingMore, page, loadProducts]);
 
   const toggleFavorite = useCallback(
     async (id: number) => {
       if (!user) return;
 
+      const isFav = favoriteIds.has(id);
+
       try {
-        if (favorites.includes(id)) {
+        if (isFav) {
           await userService.removeFavorite(user.id, id);
-          setFavorites((prev) => prev.filter((x) => x !== id));
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+
+          if (filterType === "favorites") {
+            setProducts((prev) => prev.filter((p) => p.id !== id));
+          }
         } else {
           await userService.addFavorite(user.id, id);
-          setFavorites((prev) => [...prev, id]);
+          setFavoriteIds((prev) => new Set(prev).add(id));
         }
       } catch (error) {
         console.error("Error toggling favorite:", error);
       }
     },
-    [favorites, user]
+    [user, favoriteIds, filterType],
   );
 
   const toggleMyProduct = useCallback(
     async (id: number) => {
       if (!user) return;
 
+      const isInv = inventoryIds.has(id);
+
       try {
-        if (myProducts.includes(id)) {
+        if (isInv) {
           await userService.removeFromInventory(user.id, id);
-          setMyProducts((prev) => prev.filter((x) => x !== id));
+          setInventoryIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+
+          if (filterType === "myProducts") {
+            setProducts((prev) => prev.filter((p) => p.id !== id));
+          }
         } else {
           await userService.addToInventory(user.id, id);
-          setMyProducts((prev) => [...prev, id]);
+          setInventoryIds((prev) => new Set(prev).add(id));
         }
       } catch (error) {
         console.error("Error toggling inventory:", error);
       }
     },
-    [myProducts, user]
+    [user, inventoryIds, filterType],
   );
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setVisibleCount(ITEMS_PER_PAGE);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Filtrar productos base según el tipo de vista
-  const baseProducts = useMemo(() => {
-    if (filterType === "favorites") {
-      return products.filter((p) => favorites.includes(p.id));
-    }
-    if (filterType === "myProducts") {
-      return products.filter((p) => myProducts.includes(p.id));
-    }
-    return products;
-  }, [filterType, favorites, myProducts, products]);
-
-  const filteredProducts = useMemo(() => {
-    return baseProducts.filter((product) => {
-      const matchCategory =
-        selectedCategory === 0 || product.category === selectedCategory;
-      const matchSearch =
-        product.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        product.brand.toLowerCase().includes(debouncedSearch.toLowerCase());
-      return matchCategory && matchSearch;
-    });
-  }, [baseProducts, selectedCategory, debouncedSearch]);
-
-  const visibleProducts = useMemo(() => {
-    return filteredProducts.slice(0, visibleCount);
-  }, [filteredProducts, visibleCount]);
-
-  const hasMore = visibleCount < filteredProducts.length;
-
-  const loadMore = useCallback(() => {
-    if (hasMore) {
-      setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
-    }
-  }, [hasMore]);
-
-  const handleCategoryChange = (categoryValue: string | number) => {
-    setSelectedCategory(categoryValue);
-    setVisibleCount(ITEMS_PER_PAGE);
-  };
-
   const renderProduct = useCallback(
-    ({ item }: { item: Product }) => (
+    ({ item }: { item: ProductSummaryDTO }) => (
       <ProductCard
-        item={item}
-        isFavorite={favorites.includes(item.id)}
-        isInMyProducts={myProducts.includes(item.id)}
+        item={item as any}
+        isFavorite={favoriteIds.has(item.id)}
+        isInMyProducts={inventoryIds.has(item.id)}
         onToggleFavorite={toggleFavorite}
         onToggleMyProduct={toggleMyProduct}
       />
     ),
-    [favorites, myProducts, toggleFavorite, toggleMyProduct]
+    [favoriteIds, inventoryIds, toggleFavorite, toggleMyProduct],
   );
 
-  if (isLoading) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#BB6276" />
-      </SafeAreaView>
-    );
-  }
+  const keyExtractor = useCallback(
+    (item: ProductSummaryDTO) => item.id.toString(),
+    [],
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "right", "left"]}>
       <View className="w-full px-4 pt-4">
@@ -219,7 +311,7 @@ export default function ProductListBase({
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => handleCategoryChange(item.value)}
+              onPress={() => setSelectedCategory(item.value)}
               className={`flex justify-center mr-2 px-4 py-2 rounded-full ${
                 selectedCategory === item.value
                   ? "bg-primaryPink"
@@ -243,24 +335,31 @@ export default function ProductListBase({
       <View className="px-4 mt-4 mb-2" />
 
       <FlatList
-        data={visibleProducts}
+        data={products}
         renderItem={renderProduct}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={keyExtractor}
         numColumns={2}
         columnWrapperStyle={{
           justifyContent: "space-between",
           paddingHorizontal: 16,
         }}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-10">
-            <Ionicons name={emptyIcon} size={48} color="#ccc" />
-            <Text className="text-gray-400 mt-4 text-center px-8">
-              {emptyMessage}
-            </Text>
-          </View>
+          isLoading ? (
+            <View className="flex-1 items-center justify-center py-10">
+              <ActivityIndicator size="large" color="#BB6276" />
+              <Text className="text-gray-400 mt-4">Cargando productos...</Text>
+            </View>
+          ) : (
+            <View className="flex-1 items-center justify-center py-10">
+              <Ionicons name={emptyIcon} size={48} color="#ccc" />
+              <Text className="text-gray-400 mt-4 text-center px-8">
+                {emptyMessage}
+              </Text>
+            </View>
+          )
         }
         ListFooterComponent={
-          hasMore ? (
+          isLoadingMore ? (
             <View className="py-4 items-center">
               <ActivityIndicator size="small" color="#580423" />
             </View>

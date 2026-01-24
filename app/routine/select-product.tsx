@@ -1,10 +1,14 @@
 import { useAuth } from "@/context/AuthContext";
-import { productService } from "@/services/productService";
+import {
+  PageResponse,
+  productService,
+  ProductSummaryDTO,
+} from "@/services/productService";
 import { routineService } from "@/services/routineService";
 import { userService } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,14 +19,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import api from "../../services/api";
-import { Product } from "../../types/product";
 
 const categoryNames: Record<string, string> = {
   LIMPIADOR: "Limpiador",
   TONICO: "Tónico",
   SERUM: "Serum",
-  CONTORNO_OJOS: "Contorno de ojos",
+  CONTORNO_DE_OJOS: "Contorno de ojos",
   HIDRATANTE: "Hidratante",
   MASCARILLA: "Mascarilla",
   PROTECTOR_SOLAR: "Protector solar",
@@ -34,7 +36,27 @@ const filterTabs = [
   { id: "myProducts", name: "Mis productos", icon: "checkmark-circle" },
 ];
 
-const ITEMS_PER_PAGE = 6;
+const PAGE_SIZE = 10;
+
+type TabId = "suggestions" | "favorites" | "myProducts";
+
+type TabState = {
+  products: ProductSummaryDTO[];
+  page: number;
+  hasMore: boolean;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  loaded: boolean;
+};
+
+const initialTabState: TabState = {
+  products: [],
+  page: 0,
+  hasMore: true,
+  isLoading: false,
+  isLoadingMore: false,
+  loaded: false,
+};
 
 export default function SelectProductScreen() {
   const { category, type, routineId } = useLocalSearchParams<{
@@ -47,77 +69,142 @@ export default function SelectProductScreen() {
   const routineType = type || "day";
   const stepName = categoryNames[category] || category;
 
-  const [selectedTab, setSelectedTab] = useState("suggestions");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState<TabId>("suggestions");
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductSummaryDTO | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [favoritesProducts, setFavoritesProducts] = useState<Product[]>([]);
-  const [myProductsProducts, setMyProductsProducts] = useState<Product[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+  // Estado por cada tab
+  const [tabStates, setTabStates] = useState<Record<TabId, TabState>>({
+    suggestions: { ...initialTabState },
+    favorites: { ...initialTabState },
+    myProducts: { ...initialTabState },
+  });
+
+  // Datos del perfil (cacheados)
+  const profileRef = useRef<{ skinType: string; goals: string[] } | null>(null);
+
+  // Función para actualizar estado de un tab específico
+  const updateTabState = useCallback(
+    (tabId: TabId, updates: Partial<TabState>) => {
+      setTabStates((prev) => ({
+        ...prev,
+        [tabId]: { ...prev[tabId], ...updates },
+      }));
+    },
+    [],
+  );
+
+  // Cargar datos de un tab específico
+  const loadTabData = useCallback(
+    async (tabId: TabId, page: number = 0) => {
+      if (!user || !category) return;
+
+      const isFirstPage = page === 0;
+
+      if (isFirstPage) {
+        updateTabState(tabId, { isLoading: true });
+      } else {
+        updateTabState(tabId, { isLoadingMore: true });
+      }
+
+      try {
+        // Obtener perfil si no está cacheado
+        if (!profileRef.current) {
+          const profile = await userService.getProfile(user.id);
+          profileRef.current = {
+            skinType: profile.skinType,
+            goals: profile.goals,
+          };
+        }
+
+        const { skinType, goals } = profileRef.current;
+        const applicationTime = routineType === "day" ? "DIA" : "NOCHE";
+
+        let response: PageResponse<ProductSummaryDTO>;
+
+        switch (tabId) {
+          case "suggestions":
+            response = await productService.getRecommendations(
+              category,
+              applicationTime,
+              skinType,
+              goals,
+              page,
+              PAGE_SIZE,
+            );
+            break;
+          case "favorites":
+            response = await userService.getFavorites(
+              user.id,
+              page,
+              PAGE_SIZE,
+              category,
+            );
+            break;
+          case "myProducts":
+            response = await userService.getInventory(
+              user.id,
+              page,
+              PAGE_SIZE,
+              category,
+            );
+            break;
+        }
+
+        updateTabState(tabId, {
+          products: isFirstPage
+            ? response.content
+            : [...tabStates[tabId].products, ...response.content],
+          page: page + 1,
+          hasMore: !response.last,
+          loaded: true,
+        });
+      } catch (error) {
+        console.error(`Error loading ${tabId}:`, error);
+      } finally {
+        if (isFirstPage) {
+          updateTabState(tabId, { isLoading: false });
+        } else {
+          updateTabState(tabId, { isLoadingMore: false });
+        }
+      }
+    },
+    [user, category, routineType, tabStates, updateTabState],
+  );
+
+  // Carga inicial - solo el tab de sugerencias
   useEffect(() => {
-    loadData();
+    const init = async () => {
+      setIsInitialLoading(true);
+      await loadTabData("suggestions", 0);
+      setIsInitialLoading(false);
+    };
+    init();
   }, []);
 
-  const loadData = async () => {
-    if (!user || !category) return;
-
-    setIsLoading(true);
-    try {
-      const applicationTime = routineType === "day" ? "DIA" : "NOCHE";
-
-      const userResponse = await api.get(`/users/${user.id}`);
-      const { skinType, goals } = userResponse.data;
-
-      const [suggestionsData, favoritesData, inventoryData] = await Promise.all(
-        [
-          productService.getRecommendations(
-            category,
-            applicationTime,
-            skinType,
-            goals
-          ),
-          userService.getFavorites(user.id),
-          userService.getInventory(user.id),
-        ]
-      );
-
-      setSuggestions(suggestionsData);
-      setFavoritesProducts(
-        favoritesData.filter((p) => p.category === category)
-      );
-      setMyProductsProducts(
-        inventoryData.filter((p) => p.category === category)
-      );
-    } catch (error) {
-      console.error("Error loading products:", error);
-    } finally {
-      setIsLoading(false);
+  // Cargar datos cuando cambia de tab (lazy loading)
+  useEffect(() => {
+    const currentTabState = tabStates[selectedTab];
+    if (!currentTabState.loaded && !currentTabState.isLoading) {
+      loadTabData(selectedTab, 0);
     }
-  };
+  }, [selectedTab]);
 
-  const filteredProducts = useMemo(() => {
-    if (selectedTab === "favorites") {
-      return favoritesProducts;
-    } else if (selectedTab === "myProducts") {
-      return myProductsProducts;
-    }
-    return suggestions;
-  }, [selectedTab, suggestions, favoritesProducts, myProductsProducts]);
-
-  const visibleProducts = useMemo(() => {
-    return filteredProducts.slice(0, visibleCount);
-  }, [filteredProducts, visibleCount]);
-
-  const hasMore = visibleCount < filteredProducts.length;
-
+  // Cargar más productos
   const loadMore = useCallback(() => {
-    if (hasMore) {
-      setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
+    const currentTabState = tabStates[selectedTab];
+    if (
+      currentTabState.hasMore &&
+      !currentTabState.isLoading &&
+      !currentTabState.isLoadingMore
+    ) {
+      loadTabData(selectedTab, currentTabState.page);
     }
-  }, [hasMore]);
+  }, [selectedTab, tabStates, loadTabData]);
 
+  // Guardar producto seleccionado
   const handleSave = async () => {
     if (!selectedProduct || !routineId) return;
 
@@ -132,8 +219,15 @@ export default function SelectProductScreen() {
     }
   };
 
+  // Cambiar de tab
+  const handleTabChange = (tabId: TabId) => {
+    setSelectedTab(tabId);
+    // No resetear selección al cambiar de tab
+  };
+
+  // Renderizar producto
   const renderProduct = useCallback(
-    ({ item }: { item: Product }) => {
+    ({ item }: { item: ProductSummaryDTO }) => {
       const isSelected = selectedProduct?.id === item.id;
 
       return (
@@ -172,16 +266,20 @@ export default function SelectProductScreen() {
         </TouchableOpacity>
       );
     },
-    [selectedProduct]
+    [selectedProduct],
   );
 
-  if (isLoading) {
+  // Estado actual del tab seleccionado
+  const currentTabState = tabStates[selectedTab];
+
+  if (isInitialLoading) {
     return (
       <SafeAreaView className="flex-1 bg-backgroundPink justify-center items-center">
         <ActivityIndicator size="large" color="#BB6276" />
       </SafeAreaView>
     );
   }
+
   return (
     <SafeAreaView
       className="flex-1 bg-backgroundPink"
@@ -216,10 +314,7 @@ export default function SelectProductScreen() {
             const isActive = selectedTab === item.id;
             return (
               <TouchableOpacity
-                onPress={() => {
-                  setSelectedTab(item.id);
-                  setVisibleCount(ITEMS_PER_PAGE);
-                }}
+                onPress={() => handleTabChange(item.id as TabId)}
                 className={`flex-row items-center justify-center mr-2 px-4 py-2 rounded-full border ${
                   isActive
                     ? "bg-white border-primaryPink"
@@ -247,35 +342,41 @@ export default function SelectProductScreen() {
         />
       </View>
 
-      <FlatList
-        data={visibleProducts}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        columnWrapperStyle={{
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-        }}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-10">
-            <Ionicons name="search-outline" size={48} color="#FFFF" />
-            <Text className="text-white mt-4 text-center">
-              No se encontraron productos{"\n"}para este paso
-            </Text>
-          </View>
-        }
-        ListFooterComponent={
-          hasMore ? (
-            <View className="py-4 items-center">
-              <ActivityIndicator size="small" color="#580423" />
+      {currentTabState.isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#BB6276" />
+        </View>
+      ) : (
+        <FlatList
+          data={currentTabState.products}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+          }}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-10">
+              <Ionicons name="search-outline" size={48} color="#FFFF" />
+              <Text className="text-white mt-4 text-center">
+                No se encontraron productos{"\n"}para este paso
+              </Text>
             </View>
-          ) : null
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        showsVerticalScrollIndicator={false}
-      />
+          }
+          ListFooterComponent={
+            currentTabState.isLoadingMore ? (
+              <View className="py-4 items-center">
+                <ActivityIndicator size="small" color="#580423" />
+              </View>
+            ) : null
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <View className="absolute bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-backgroundPink">
         <TouchableOpacity

@@ -14,7 +14,7 @@ const categorias = [
   {
     id: 1,
     nombre: "Contorno de ojos",
-    value: "CONTORNO_OJOS",
+    value: "CONTORNO_DE_OJOS",
     imagen: require("../../assets/images/categories/contorno.jpg"),
   },
   {
